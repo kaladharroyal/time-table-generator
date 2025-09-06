@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Timetable Generator - Automated Academic Scheduling</title>
+    <meta name="description" content="Generate optimized class schedules for educational institutions with intelligent scheduling algorithms">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="university-header">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="graduation-cap" class="h-8 w-8"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">College Timetable Generator</h1>
+                        <p class="primary-foreground-80 text-sm">Automated Academic Scheduling System</p>
+                    </div>
+                </div>
+                <div>
+                    <button id="logoutBtn" class="btn btn-outline btn-sm">
+                        <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
+                        Logout
+                    </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Faculty View -->
+          <div id="facultyView" class="view active space-y-6">
+            <div>
+                <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Schedule View</h2>
+                <p class="text-muted-foreground">Select a faculty member to view their teaching schedule</p>
+            </div>
+
+            <div class="admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="user" class="h-5 w-5 mr-2 text-primary"></i>
+                        Select Faculty
+                    </h3>
+                    <button id="downloadFacultyBtn" class="btn btn-outline btn-sm hidden">
+                        <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                        Download Schedule
+                    </button>
+                </div>
+                
+                <select id="facultySelect" class="custom-select max-w-md">
+                    <option value="">Choose a faculty member</option>
+                </select>
+            </div>
+
+            <div id="facultyDetails" class="space-y-6 hidden">
+                <!-- Faculty Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="clock" class="h-4 w-4 text-primary"></i>
+                            <span class="text-sm font-medium">Total Periods</span>
+                        </div>
+                        <p id="facultyTotalPeriods" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="book-open" class="h-4 w-4 text-blue-500"></i>
+                            <span class="text-sm font-medium">Theory Classes</span>
+                        </div>
+                        <p id="facultyTheoryCount" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="h-4 w-4 bg-purple-500 rounded"></div>
+                            <span class="text-sm font-medium">Lab Sessions</span>
+                        </div>
+                        <p id="facultyLabCount" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="h-4 w-4 bg-green-500 rounded"></div>
+                            <span class="text-sm font-medium">Subjects</span>
+                        </div>
+                        <p id="facultySubjectCount" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                </div>
+
+                <!-- Faculty Schedule Grid -->
+                <div class="admin-card overflow-hidden">
+                    <div class="p-6 border-b">
+                        <h3 id="facultyScheduleTitle" class="text-xl font-semibold">Weekly Schedule</h3>
+                    </div>
+                    <div id="facultyScheduleGrid" class="grid grid-cols-6 gap-0"></div>
+                </div>
+
+                <!-- Subjects Taught -->
+                <div class="admin-card">
+                    <h3 class="text-xl font-semibold mb-4">Subjects Taught</h3>
+                    <div id="facultySubjectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+
+            <div id="noFacultySelected" class="admin-card p-12 text-center">
+                <i data-lucide="user" class="h-16 w-16 mx-auto mb-4 text-muted-foreground"></i>
+                <h3 class="text-xl font-semibold mb-2">Select Faculty Member</h3>
+                <p class="text-muted-foreground">
+                    Choose a faculty member from the dropdown above to view their schedule
+                </p>
+            </div>
+        </div>
+</body>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+    }
+});
+</script>
+</html>

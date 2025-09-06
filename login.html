@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Classroom & Exam Allotment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* General body and typography styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3e8ff; /* lavender */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #1f2937;
+        }
+
+        /* Container for the login card */
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem;
+            text-align: center;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Header styling */
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        /* Role tabs */
+        .tab-buttons {
+            display: flex;
+            justify-content: center;
+            background-color: #f3f4f6;
+            border-radius: 0.75rem;
+            padding: 0.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            background-color: transparent;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            color: #4b5563;
+        }
+
+        .tab-button.active {
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            color: #1f2937;
+        }
+
+        /* Form groups */
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease-in-out;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #a78bfa; /* lavender border */
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+        }
+
+        /* Primary button */
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #a78bfa; /* lavender */
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .btn-primary:hover {
+            background-color: #7c3aed; /* darker lavender */
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            background-color: #6d28d9; /* even darker lavender */
+            transform: translateY(0);
+        }
+
+        /* Simple function for a message box */
+        .message-box {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem;
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            animation: fadeOut 5s forwards;
+            z-index: 1000;
+        }
+
+        /* Keyframe animation for the message box */
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="header">
+            <h1>Classroom & Exam Allotment</h1>
+            <p>Login to your account as a Student, Faculty, or Admin.</p>
+        </div>
+        <div class="tab-buttons">
+            <button class="tab-button active" data-role="student">Student</button>
+            <button class="tab-button" data-role="faculty">Faculty</button>
+            <button class="tab-button" data-role="admin">Admin</button>
+        </div>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">ID / Email</label>
+                <input type="text" id="username" placeholder="e.g., 23CSE001 or ram@college.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn-primary">Login</button>
+        </form>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        let activeRole = 'student';
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                activeRole = button.dataset.role;
+
+                if (activeRole === 'student') {
+                    usernameInput.placeholder = 'e.g., 23CSE001';
+                    document.querySelector('label[for="username"]').textContent = 'Roll No.';
+                } else if (activeRole === 'faculty') {
+                    usernameInput.placeholder = 'e.g., ram@college.com';
+                    document.querySelector('label[for="username"]').textContent = 'Email';
+                } else if (activeRole === 'admin') {
+                    usernameInput.placeholder = 'admin';
+                    document.querySelector('label[for="username"]').textContent = 'Username';
+                }
+            });
+        });
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            // Mock login logic and redirection
+            if (activeRole === 'admin' && username === 'admin' && password === 'admin123') {
+                window.location.href = 'AdminDashboard.html';
+            } else if (activeRole === 'student' && username === '23CSE001' && password === '1234') {
+                window.location.href = 'StudentDashboard.html';
+            } else if (activeRole === 'faculty' && username === 'ram@college.com' && password === '1234') {
+                window.location.href = 'FacultyDashboard.html';
+            } else {
+                showErrorMessage('Invalid credentials. Please try again.');
+            }
+        });
+        
+        function showErrorMessage(message) {
+            let messageBox = document.querySelector('.message-box');
+            if (!messageBox) {
+                messageBox = document.createElement('div');
+                messageBox.className = 'message-box';
+                document.body.appendChild(messageBox);
+            }
+            messageBox.textContent = message;
+            messageBox.style.animation = 'none';
+            void messageBox.offsetWidth;
+            messageBox.style.animation = 'fadeOut 5s forwards';
+        }
+    </script>
+</body>
+</html>

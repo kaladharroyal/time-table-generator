@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Timetable Generator - Automated Academic Scheduling</title>
+    <meta name="description" content="Generate optimized class schedules for educational institutions with intelligent scheduling algorithms">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="university-header">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="graduation-cap" class="h-8 w-8"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">University Timetable Generator</h1>
+                        <p class="primary-foreground-80 text-sm">Automated Academic Scheduling System</p>
+                    </div>
+                </div>
+                <nav class="flex space-x-4">
+                    <button id="adminBtn" class="nav-btn active">
+                        <i data-lucide="settings" class="h-4 w-4 mr-2"></i>
+                        Admin Panel
+                    </button>
+                    <button id="timetableBtn" class="nav-btn" disabled>
+                        <i data-lucide="calendar" class="h-4 w-4 mr-2"></i>
+                        View Timetable
+                    </button>
+                    <button id="facultyBtn" class="nav-btn">
+                        <i data-lucide="users" class="h-4 w-4 mr-2"></i>
+                        Faculty View
+                    </button>
+                    <button id="addfaculty" class="nav-btn">
+                        <i data-lucide="users" class="h-4 w-4 mr-2"></i>
+                        Add Faculty
+                    </button>
+                    <button id="logoutBtn" class="btn btn-outline btn-sm">
+                        <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
+                        Logout
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        <!-- Admin Panel View -->
+        <div id="adminView" class="view active space-y-8">
+            <!-- Hero Section -->
+            <div class="text-center space-y-6 py-12">
+                <h1 class="text-4xl font-bold text-university-primary">Smart Timetable Generator</h1>
+                <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Automatically generate optimized class schedules for your educational institution with our intelligent scheduling system.
+                </p>
+                <div class="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+                    <span class="flex items-center gap-2">
+                        <div class="h-3 w-3 bg-university-primary rounded-full"></div>
+                        Frontend: HTML, CSS, JavaScript
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <div class="h-3 w-3 bg-university-secondary rounded-full"></div>
+                        Backend: Python Flask
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <div class="h-3 w-3 bg-university-accent rounded-full"></div>
+                        Database: MySQL
+                    </span>
+                </div>
+            </div>
+
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-foreground mb-2">Timetable Configuration</h2>
+                <p class="text-muted-foreground">Set up branches, sections, subjects, and faculty assignments</p>
+            </div>
+
+            <!-- Branch and Section Selection -->
+            <div class="admin-card">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="book-open" class="h-5 w-5 mr-2 text-primary"></i>
+                    Branch & Section Selection
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label for="branchSelect" class="block text-sm font-medium">Select Branch</label>
+                        <select id="branchSelect" class="custom-select">
+                            <option value="">Choose a branch</option>
+                            <option value="CSE">CSE</option>
+                            <option value="AIML">AIML</option>
+                            <option value="CSM">CSM</option>
+                            <option value="CAI">CAI</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="sectionSelect" class="block text-sm font-medium">Select Section</label>
+                        <select id="sectionSelect" class="custom-select">
+                            <option value="">Choose a section</option>
+                            <option value="A">Section A</option>
+                            <option value="B">Section B</option>
+                            <option value="C">Section C</option>
+                            <option value="D">Section D</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="selectionDisplay" class="mt-4 p-3 bg-primary-10 rounded-lg hidden">
+                    <p class="text-sm text-primary font-medium"></p>
+                </div>
+            </div>
+
+            <!-- Add Faculty -->
+            <div class="admin-card">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="user-plus" class="h-5 w-5 mr-2 text-primary"></i>
+                    Add Faculty
+                </h3>
+                <form id="addFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                    <div class="flex-1">
+                        <label for="facultyNameInput" class="block text-sm font-medium mb-1">Faculty Name</label>
+                        <input id="facultyNameInput" type="text" class="custom-input w-full" placeholder="Enter faculty name" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="width:120px;min-width:unset;">Add Faculty</button>
+                </form>
+                <p id="addFacultyMsg" class="text-sm text-green-600 mt-2 hidden">Faculty added!</p>
+            </div>
+
+            <!-- Subject Management -->
+            <div class="admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="clock" class="h-5 w-5 mr-2 text-primary"></i>
+                        Subject Management
+                    </h3>
+                    <div class="space-x-2">
+                        <button id="loadDefaultBtn" class="btn btn-outline btn-sm">
+                            Load Default Subjects
+                        </button>
+                        <button id="addSubjectBtn" class="btn btn-primary btn-sm">
+                            Add Subject
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="subjectsContainer">
+                    <div id="noSubjects" class="text-center py-8 text-muted-foreground">
+                        <i data-lucide="book-open" class="h-12 w-12 mx-auto mb-4 opacity-50"></i>
+                        <p>No subjects configured. Add subjects or load default subjects to get started.</p>
+                    </div>
+                    <div id="subjectsList" class="space-y-4 hidden"></div>
+                </div>
+            </div>
+
+            <!-- Generate Timetable -->
+            <div class="admin-card">
+                <div class="text-center space-y-4">
+                    <h3 class="text-xl font-semibold">Generate Timetable</h3>
+                    <p class="text-muted-foreground">
+                        Create an optimized timetable based on the configured subjects and constraints
+                    </p>
+                    <button id="generateBtn" class="btn btn-primary btn-lg w-full md:w-auto" disabled>
+                        <i data-lucide="calendar" class="h-5 w-5 mr-2"></i>
+                        Generate Timetable
+                    </button>
+                    <p id="generateHelp" class="text-sm text-muted-foreground">
+                        Please select branch, section, and add subjects to generate a timetable
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timetable View -->
+        <div id="timetableView" class="view space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-bold text-foreground">Generated Timetable</h2>
+                    <p id="timetableSubtitle" class="text-muted-foreground mt-1"></p>
+                </div>
+                <button id="downloadBtn" class="btn btn-outline">
+                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                    Download
+                </button>
+            </div>
+
+            <div class="admin-card">
+                <div id="timetableGrid" class="timetable-grid"></div>
+                <div id="facultyListContainer" class="mt-6"></div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="admin-card p-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="h-3 w-3 bg-blue-500 rounded"></div>
+                        <span class="text-sm font-medium">Theory Classes</span>
+                    </div>
+                    <p id="theoryCount" class="text-2xl font-bold mt-2">0</p>
+                </div>
+                <div class="admin-card p-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="h-3 w-3 bg-purple-500 rounded"></div>
+                        <span class="text-sm font-medium">Lab Sessions</span>
+                    </div>
+                    <p id="labCount" class="text-2xl font-bold mt-2">0</p>
+                </div>
+                <div class="admin-card p-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="h-3 w-3 bg-green-500 rounded"></div>
+                        <span class="text-sm font-medium">Total Periods</span>
+                    </div>
+                    <p id="totalCount" class="text-2xl font-bold mt-2">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty View -->
+        <div id="facultyView" class="view space-y-6">
+            <div>
+                <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Schedule View</h2>
+                <p class="text-muted-foreground">Select a faculty member to view their teaching schedule</p>
+            </div>
+
+            <div class="admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="user" class="h-5 w-5 mr-2 text-primary"></i>
+                        Select Faculty
+                    </h3>
+                    <button id="downloadFacultyBtn" class="btn btn-outline btn-sm hidden">
+                        <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                        Download Schedule
+                    </button>
+                </div>
+                
+                <select id="facultySelect" class="custom-select max-w-md">
+                    <option value="">Choose a faculty member</option>
+                </select>
+            </div>
+
+            <div id="facultyDetails" class="space-y-6 hidden">
+                <!-- Faculty Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="clock" class="h-4 w-4 text-primary"></i>
+                            <span class="text-sm font-medium">Total Periods</span>
+                        </div>
+                        <p id="facultyTotalPeriods" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="book-open" class="h-4 w-4 text-blue-500"></i>
+                            <span class="text-sm font-medium">Theory Classes</span>
+                        </div>
+                        <p id="facultyTheoryCount" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="h-4 w-4 bg-purple-500 rounded"></div>
+                            <span class="text-sm font-medium">Lab Sessions</span>
+                        </div>
+                        <p id="facultyLabCount" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="admin-card p-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="h-4 w-4 bg-green-500 rounded"></div>
+                            <span class="text-sm font-medium">Subjects</span>
+                        </div>
+                        <p id="facultySubjectCount" class="text-2xl font-bold mt-2">0</p>
+                    </div>
+                </div>
+
+                <!-- Faculty Schedule Grid -->
+                <div class="admin-card overflow-hidden">
+                    <div class="p-6 border-b">
+                        <h3 id="facultyScheduleTitle" class="text-xl font-semibold">Weekly Schedule</h3>
+                    </div>
+                    <div id="facultyScheduleGrid" class="grid grid-cols-6 gap-0"></div>
+                </div>
+
+                <!-- Subjects Taught -->
+                <div class="admin-card">
+                    <h3 class="text-xl font-semibold mb-4">Subjects Taught</h3>
+                    <div id="facultySubjectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+
+            <div id="noFacultySelected" class="admin-card p-12 text-center">
+                <i data-lucide="user" class="h-16 w-16 mx-auto mb-4 text-muted-foreground"></i>
+                <h3 class="text-xl font-semibold mb-2">Select Faculty Member</h3>
+                <p class="text-muted-foreground">
+                    Choose a faculty member from the dropdown above to view their schedule
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
