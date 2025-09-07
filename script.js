@@ -64,6 +64,13 @@ const noSubjects = document.getElementById('noSubjects');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // Universal logout button logic for all dashboards
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+    }
     lucide.createIcons();
     setupEventListeners();
     updateGenerateButton();
@@ -430,48 +437,82 @@ function generateTimetable() {
         });
     });
 
-    const shuffledSubjects = [...subjects].sort(() => 0.5 - Math.random());
-    const subjectHours = shuffledSubjects.map(s => ({ ...s, hoursLeft: s.hours }));
 
-    // Place labs first as continuous blocks
+    // 1. No randomness: Sort subjects by hours descending, then by name for determinism
+    const sortedSubjects = [...subjects].sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
+    const subjectHours = sortedSubjects.map(s => ({ ...s, hoursLeft: s.hours }));
+
+    // 2. Place labs first, one per day, balance across week
     const labs = subjectHours.filter(s => s.type === 'lab');
-    const daysWithLabs = new Set();
-    
+    let labDayIdx = 0;
     labs.forEach(lab => {
         let placed = false;
-        // Try to find a day that does not already have a lab
-        for (const day of days) {
-            if (!daysWithLabs.has(day)) {
-                const periodsInDay = periods.filter(p => p !== 'Break' && p !== 'Lunch');
-                const slots = findContinuousSlots(timetableMap, day, periods, lab.hours);
-                if (slots) {
-                    slots.forEach(period => {
+        for (let attempt = 0; attempt < days.length; attempt++) {
+            const day = days[(labDayIdx + attempt) % days.length];
+            const slots = findContinuousSlots(timetableMap, day, periods, lab.hours);
+            if (slots) {
+                slots.forEach(period => {
+                    // Prevent faculty overlap: check if faculty is already teaching this period in any section (simulate multi-section)
+                    if (!facultyConflict(timetableMap, day, period, lab.faculty)) {
                         timetableMap[day][period] = createSlot(day, period, lab, 'Lab-101');
-                    });
-                    placed = true;
-                    daysWithLabs.add(day);
-                    break;
+                    }
+                });
+                lab.hoursLeft = 0;
+                placed = true;
+                labDayIdx = (labDayIdx + 1) % days.length;
+                break;
+            }
+        }
+        // fallback: if not placed, skip (should not happen with enough slots)
+    });
+
+    // 3. Place theory subjects, round-robin, balance across days, prevent faculty overlap
+    const theories = subjectHours.filter(s => s.type !== 'lab');
+    let theoryDayIdx = 0;
+    while (theories.some(t => t.hoursLeft > 0)) {
+        for (let tIdx = 0; tIdx < theories.length; tIdx++) {
+            const subject = theories[tIdx];
+            if (subject.hoursLeft <= 0) continue;
+            let assigned = false;
+            for (let attempt = 0; attempt < days.length; attempt++) {
+                const day = days[(theoryDayIdx + attempt) % days.length];
+                const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
+                for (const period of validPeriods) {
+                    if (!timetableMap[day][period] && !facultyConflict(timetableMap, day, period, subject.faculty)) {
+                        timetableMap[day][period] = createSlot(day, period, subject, 'Room-205');
+                        subject.hoursLeft--;
+                        assigned = true;
+                        break;
+                    }
+                }
+                if (assigned) break;
+            }
+            theoryDayIdx = (theoryDayIdx + 1) % days.length;
+        }
+        // If no assignment possible for any, break to avoid infinite loop
+        if (!theories.some(t => t.hoursLeft > 0 && canAssign(t, timetableMap, days, periods))) break;
+    }
+
+    // Helper: Check if a faculty is already teaching at this day/period (simulate multi-section)
+    function facultyConflict(map, day, period, faculty) {
+        if (!faculty) return false;
+        // Check all days/periods for this faculty
+        return Object.values(map).some(dayMap =>
+            dayMap[period] && dayMap[period].faculty === faculty
+        );
+    }
+    // Helper: Can assign subject anywhere?
+    function canAssign(subject, map, days, periods) {
+        for (const day of days) {
+            const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
+            for (const period of validPeriods) {
+                if (!map[day][period] && !facultyConflict(map, day, period, subject.faculty)) {
+                    return true;
                 }
             }
         }
-    });
-
-    // Place remaining theory subjects in any available slots
-    const theories = subjectHours.filter(s => s.type !== 'lab');
-    let theoryIndex = 0;
-    days.forEach(day => {
-        periods.forEach(period => {
-            if (!timetableMap[day][period]) {
-                const availableTheories = theories.filter(t => t.hoursLeft > 0);
-                if (availableTheories.length > 0) {
-                    const theory = availableTheories[theoryIndex % availableTheories.length];
-                    timetableMap[day][period] = createSlot(day, period, theory, 'Room-205');
-                    theory.hoursLeft--;
-                    theoryIndex++;
-                }
-            }
-        });
-    });
+        return false;
+    }
 
     // Flatten timetableMap to generatedTimetable
     generatedTimetable = Object.values(timetableMap).flatMap(day => Object.values(day).filter(slot => slot));

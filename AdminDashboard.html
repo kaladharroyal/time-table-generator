@@ -17,7 +17,7 @@
                 <div class="flex items-center space-x-3">
                     <i data-lucide="graduation-cap" class="h-8 w-8"></i>
                     <div>
-                        <h1 class="text-2xl font-bold">University Timetable Generator</h1>
+                        <h1 class="text-2xl font-bold">College Timetable Generator</h1>
                         <p class="primary-foreground-80 text-sm">Automated Academic Scheduling System</p>
                     </div>
                 </div>
@@ -34,8 +34,8 @@
                         <i data-lucide="users" class="h-4 w-4 mr-2"></i>
                         Faculty View
                     </button>
-                    <button id="addfaculty" class="nav-btn">
-                        <i data-lucide="users" class="h-4 w-4 mr-2"></i>
+                    <button id="addFacultyBtn" class="nav-btn">
+                        <i data-lucide="user-plus" class="h-4 w-4 mr-2"></i>
                         Add Faculty
                     </button>
                     <button id="logoutBtn" class="btn btn-outline btn-sm">
@@ -49,29 +49,14 @@
 
     <main class="container mx-auto px-6 py-8">
         <!-- Admin Panel View -->
-        <div id="adminView" class="view active space-y-8">
+    <div id="adminView" class="view space-y-8" style="display: block;">
             <!-- Hero Section -->
             <div class="text-center space-y-6 py-12">
                 <h1 class="text-4xl font-bold text-university-primary">Smart Timetable Generator</h1>
                 <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
                     Automatically generate optimized class schedules for your educational institution with our intelligent scheduling system.
                 </p>
-                <div class="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                    <span class="flex items-center gap-2">
-                        <div class="h-3 w-3 bg-university-primary rounded-full"></div>
-                        Frontend: HTML, CSS, JavaScript
-                    </span>
-                    <span class="flex items-center gap-2">
-                        <div class="h-3 w-3 bg-university-secondary rounded-full"></div>
-                        Backend: Python Flask
-                    </span>
-                    <span class="flex items-center gap-2">
-                        <div class="h-3 w-3 bg-university-accent rounded-full"></div>
-                        Database: MySQL
-                    </span>
-                </div>
             </div>
-
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-foreground mb-2">Timetable Configuration</h2>
                 <p class="text-muted-foreground">Set up branches, sections, subjects, and faculty assignments</p>
@@ -110,22 +95,6 @@
                 </div>
             </div>
 
-            <!-- Add Faculty -->
-            <div class="admin-card">
-                <h3 class="text-xl font-semibold mb-4 flex items-center">
-                    <i data-lucide="user-plus" class="h-5 w-5 mr-2 text-primary"></i>
-                    Add Faculty
-                </h3>
-                <form id="addFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-                    <div class="flex-1">
-                        <label for="facultyNameInput" class="block text-sm font-medium mb-1">Faculty Name</label>
-                        <input id="facultyNameInput" type="text" class="custom-input w-full" placeholder="Enter faculty name" required />
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm" style="width:120px;min-width:unset;">Add Faculty</button>
-                </form>
-                <p id="addFacultyMsg" class="text-sm text-green-600 mt-2 hidden">Faculty added!</p>
-            </div>
-
             <!-- Subject Management -->
             <div class="admin-card">
                 <div class="flex items-center justify-between mb-4">
@@ -142,7 +111,6 @@
                         </button>
                     </div>
                 </div>
-                
                 <div id="subjectsContainer">
                     <div id="noSubjects" class="text-center py-8 text-muted-foreground">
                         <i data-lucide="book-open" class="h-12 w-12 mx-auto mb-4 opacity-50"></i>
@@ -157,7 +125,7 @@
                 <div class="text-center space-y-4">
                     <h3 class="text-xl font-semibold">Generate Timetable</h3>
                     <p class="text-muted-foreground">
-                        Create an optimized timetable based on the configured subjects and constraints
+                        Create a timetable based on the selected criteria
                     </p>
                     <button id="generateBtn" class="btn btn-primary btn-lg w-full md:w-auto" disabled>
                         <i data-lucide="calendar" class="h-5 w-5 mr-2"></i>
@@ -171,7 +139,7 @@
         </div>
 
         <!-- Timetable View -->
-        <div id="timetableView" class="view space-y-6">
+    <div id="timetableView" class="view space-y-6" style="display: none;">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-3xl font-bold text-foreground">Generated Timetable</h2>
@@ -214,13 +182,10 @@
             </div>
         </div>
 
-        <!-- Faculty View -->
-        <div id="facultyView" class="view space-y-6">
-            <div>
-                <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Schedule View</h2>
-                <p class="text-muted-foreground">Select a faculty member to view their teaching schedule</p>
-            </div>
-
+    <!-- Faculty View -->
+    <div id="facultyView" class="view space-y-6" style="display: none;">
+            <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Schedule View</h2>
+            <p class="text-muted-foreground">Select a faculty member to view their teaching schedule</p>
             <div class="admin-card">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-semibold flex items-center">
@@ -232,12 +197,10 @@
                         Download Schedule
                     </button>
                 </div>
-                
                 <select id="facultySelect" class="custom-select max-w-md">
                     <option value="">Choose a faculty member</option>
                 </select>
             </div>
-
             <div id="facultyDetails" class="space-y-6 hidden">
                 <!-- Faculty Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -270,7 +233,6 @@
                         <p id="facultySubjectCount" class="text-2xl font-bold mt-2">0</p>
                     </div>
                 </div>
-
                 <!-- Faculty Schedule Grid -->
                 <div class="admin-card overflow-hidden">
                     <div class="p-6 border-b">
@@ -278,14 +240,12 @@
                     </div>
                     <div id="facultyScheduleGrid" class="grid grid-cols-6 gap-0"></div>
                 </div>
-
                 <!-- Subjects Taught -->
                 <div class="admin-card">
                     <h3 class="text-xl font-semibold mb-4">Subjects Taught</h3>
                     <div id="facultySubjectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
             </div>
-
             <div id="noFacultySelected" class="admin-card p-12 text-center">
                 <i data-lucide="user" class="h-16 w-16 mx-auto mb-4 text-muted-foreground"></i>
                 <h3 class="text-xl font-semibold mb-2">Select Faculty Member</h3>
@@ -294,9 +254,118 @@
                 </p>
             </div>
         </div>
+
+        <!-- Add Faculty View -->
+    <div id="addFacultyView" class="view space-y-6" style="display: none;">
+            <h2 class="text-3xl font-bold text-foreground mb-2">Add/Delete Faculty</h2>
+            <div id="addFacultySection" class="admin-card" style="max-width: 500px; width: 100%; margin: 0 auto;">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="user-plus" class="h-5 w-5 mr-2 text-primary"></i>
+                    Add Faculty
+                </h3>
+                <form id="addFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                    <div class="flex-1">
+                        <label for="facultyNameInput" class="block text-sm font-medium mb-1">Faculty Name</label>
+                        <input id="facultyNameInput" type="text" class="custom-input w-full" placeholder="Enter faculty name" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="width:120px;min-width:unset;">Add Faculty</button>
+                </form>
+                <p id="addFacultyMsg" class="text-sm text-green-600 mt-2 hidden">Faculty added!</p>
+                <hr class="my-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="user-minus" class="h-5 w-5 mr-2 text-destructive"></i>
+                    Delete Faculty
+                </h3>
+                <form id="deleteFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                    <div class="flex-1">
+                        <label for="facultyDeleteSelect" class="block text-sm font-medium mb-1">Select Faculty</label>
+                        <select id="facultyDeleteSelect" class="custom-select w-full"></select>
+                    </div>
+                    <button type="submit" class="btn btn-destructive btn-sm" style="width:120px;min-width:unset;">Delete</button>
+                </form>
+                <p id="deleteFacultyMsg" class="text-sm text-green-600 mt-2 hidden">Faculty deleted!</p>
+            </div>
+        </div>
+        </div>
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="script.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure only adminView is visible on load
+        const views = document.querySelectorAll('.view');
+        views.forEach(v => v.style.display = 'none');
+        const adminView = document.getElementById('adminView');
+        if (adminView) adminView.style.display = 'block';
+
+        // View switching logic
+        function showView(viewId) {
+            const views = document.querySelectorAll('.view');
+            views.forEach(v => v.style.display = 'none');
+            const view = document.getElementById(viewId);
+            if (view) view.style.display = 'block';
+        }
+        // Navbar buttons
+        document.getElementById('adminBtn').addEventListener('click', function() { showView('adminView'); });
+        document.getElementById('timetableBtn').addEventListener('click', function() { showView('timetableView'); });
+        document.getElementById('facultyBtn').addEventListener('click', function() { showView('facultyView'); });
+        document.getElementById('addFacultyBtn').addEventListener('click', function() { showView('addFacultyView'); lucide.createIcons(); updateDeleteDropdown(); });
+
+        // Faculty management logic (from AddFaculty.html)
+        function getFacultyList() {
+            let list = [];
+            if (localStorage.getItem('facultyList')) {
+                try {
+                    list = JSON.parse(localStorage.getItem('facultyList'));
+                } catch (e) { list = []; }
+            }
+            return list;
+        }
+        function setFacultyList(list) {
+            localStorage.setItem('facultyList', JSON.stringify(list));
+        }
+        function updateDeleteDropdown() {
+            const select = document.getElementById('facultyDeleteSelect');
+            if (!select) return;
+            const list = getFacultyList();
+            select.innerHTML = '';
+            if (list.length === 0) {
+                select.innerHTML = '<option value="">No faculty available</option>';
+            } else {
+                select.innerHTML = '<option value="">Select faculty</option>' + list.map(f => `<option value="${f}">${f}</option>`).join('');
+            }
+        }
+        updateDeleteDropdown();
+
+        // Delete faculty logic
+        var deleteFacultyForm = document.getElementById('deleteFacultyForm');
+        if (deleteFacultyForm) {
+            deleteFacultyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const select = document.getElementById('facultyDeleteSelect');
+                const msg = document.getElementById('deleteFacultyMsg');
+                const name = select.value;
+                if (name) {
+                    let list = getFacultyList();
+                    list = list.filter(f => f !== name);
+                    setFacultyList(list);
+                    msg.textContent = 'Faculty deleted!';
+                    msg.classList.remove('hidden');
+                    updateDeleteDropdown();
+                    setTimeout(() => msg.classList.add('hidden'), 1500);
+                }
+            });
+        }
+
+        // Update dropdown after add
+        var addFacultyForm = document.getElementById('addFacultyForm');
+        if (addFacultyForm) {
+            addFacultyForm.addEventListener('submit', function() {
+                setTimeout(updateDeleteDropdown, 200);
+            });
+        }
+    });
+    </script>
 </body>
 </html>

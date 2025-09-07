@@ -5,13 +5,14 @@
                 "authProtocol": "default",
                 "enableSsl": "Disabled"
             },
+            "ssh": "Disabled",
             "previewLimit": 50,
             "server": "localhost",
             "port": 3306,
             "driver": "MySQL",
-            "name": "college_tt",
-            "database": "timetable_db",
-            "username": "kaladharroyal",
+            "name": "college_time_table",
+            "database": "time_table",
+            "username": "root",
             "connectionTimeout": 1234
         }
     ]

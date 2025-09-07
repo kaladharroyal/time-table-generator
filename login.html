@@ -163,7 +163,7 @@
 <body>
     <div class="login-container">
         <div class="header">
-            <h1>Classroom & Exam Allotment</h1>
+            <h1>College Timetable</h1>
             <p>Login to your account as a Student, Faculty, or Admin.</p>
         </div>
         <div class="tab-buttons">
@@ -185,51 +185,71 @@
     </div>
 
     <script>
-        const loginForm = document.getElementById('login-form');
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
+            const loginForm = document.getElementById('login-form');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
 
-        let activeRole = 'student';
+            let activeRole = 'student';
 
-        tabButtons.forEach(button => {
+            // Tab switching logic
+            tabButtons.forEach(button => {
             button.addEventListener('click', () => {
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 activeRole = button.dataset.role;
 
                 if (activeRole === 'student') {
-                    usernameInput.placeholder = 'e.g., 23CSE001';
-                    document.querySelector('label[for="username"]').textContent = 'Roll No.';
+                usernameInput.placeholder = 'e.g., 23CSE001';
+                document.querySelector('label[for="username"]').textContent = 'Roll No.';
                 } else if (activeRole === 'faculty') {
-                    usernameInput.placeholder = 'e.g., ram@college.com';
-                    document.querySelector('label[for="username"]').textContent = 'Email';
+                usernameInput.placeholder = 'e.g., ram@college.com';
+                document.querySelector('label[for="username"]').textContent = 'Email';
                 } else if (activeRole === 'admin') {
-                    usernameInput.placeholder = 'admin';
-                    document.querySelector('label[for="username"]').textContent = 'Username';
+                usernameInput.placeholder = 'admin';
+                document.querySelector('label[for="username"]').textContent = 'Username';
                 }
             });
-        });
+            });
 
-        loginForm.addEventListener('submit', (event) => {
+            // Login form submit
+            loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
 
             const username = usernameInput.value;
             const password = passwordInput.value;
 
-            // Mock login logic and redirection
-            if (activeRole === 'admin' && username === 'admin' && password === 'admin123') {
-                window.location.href = 'AdminDashboard.html';
-            } else if (activeRole === 'student' && username === '23CSE001' && password === '1234') {
-                window.location.href = 'StudentDashboard.html';
-            } else if (activeRole === 'faculty' && username === 'ram@college.com' && password === '1234') {
-                window.location.href = 'FacultyDashboard.html';
-            } else {
-                showErrorMessage('Invalid credentials. Please try again.');
+            try {
+                const res = await fetch("http://localhost:5000/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password, role: activeRole })
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                showErrorMessage(data.message || "Login failed");
+                return;
+                }
+
+                // Redirect based on role
+                if (data.role === "admin") {
+                window.location.href = "AdminDashboard.html";
+                } else if (data.role === "student") {
+                window.location.href = "StudentDashboard.html";
+                } else if (data.role === "faculty") {
+                window.location.href = "FacultyDashboard.html";
+                }
+
+            } catch (err) {
+                console.error(err);
+                showErrorMessage("Server error. Please try again later.");
             }
-        });
-        
-        function showErrorMessage(message) {
+            });
+
+            // Error message
+            function showErrorMessage(message) {
             let messageBox = document.querySelector('.message-box');
             if (!messageBox) {
                 messageBox = document.createElement('div');
@@ -240,7 +260,8 @@
             messageBox.style.animation = 'none';
             void messageBox.offsetWidth;
             messageBox.style.animation = 'fadeOut 5s forwards';
-        }
+            }
     </script>
+
 </body>
 </html>
