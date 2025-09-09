@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>University Timetable Generator - Automated Academic Scheduling</title>
     <meta name="description" content="Generate optimized class schedules for educational institutions with intelligent scheduling algorithms">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/static/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css">
 </head>
@@ -49,7 +49,7 @@
 
     <main class="container mx-auto px-6 py-8">
         <!-- Admin Panel View -->
-    <div id="adminView" class="view space-y-8" style="display: block;">
+    <div id="adminView" class="view active space-y-8">
             <!-- Hero Section -->
             <div class="text-center space-y-6 py-12">
                 <h1 class="text-4xl font-bold text-university-primary">Smart Timetable Generator</h1>
@@ -73,20 +73,18 @@
                         <label for="branchSelect" class="block text-sm font-medium">Select Branch</label>
                         <select id="branchSelect" class="custom-select">
                             <option value="">Choose a branch</option>
-                            <option value="CSE">CSE</option>
-                            <option value="AIML">AIML</option>
-                            <option value="CSM">CSM</option>
-                            <option value="CAI">CAI</option>
+                            <!-- Branch options will be populated dynamically by JS -->
                         </select>
                     </div>
                     <div class="space-y-2">
                         <label for="sectionSelect" class="block text-sm font-medium">Select Section</label>
                         <select id="sectionSelect" class="custom-select">
                             <option value="">Choose a section</option>
-                            <option value="A">Section A</option>
-                            <option value="B">Section B</option>
-                            <option value="C">Section C</option>
-                            <option value="D">Section D</option>
+                            <select id="sectionSelect" class="custom-select">
+                            <option value="A"></option>
+                            <option value="B"></option>
+                            <option value="C"></option>
+                            <!-- Section options will be populated dynamically by JS -->
                         </select>
                     </div>
                 </div>
@@ -139,7 +137,7 @@
         </div>
 
         <!-- Timetable View -->
-    <div id="timetableView" class="view space-y-6" style="display: none;">
+    <div id="timetableView" class="view space-y-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-3xl font-bold text-foreground">Generated Timetable</h2>
@@ -183,7 +181,7 @@
         </div>
 
     <!-- Faculty View -->
-    <div id="facultyView" class="view space-y-6" style="display: none;">
+    <div id="facultyView" class="view space-y-6">
             <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Schedule View</h2>
             <p class="text-muted-foreground">Select a faculty member to view their teaching schedule</p>
             <div class="admin-card">
@@ -256,7 +254,7 @@
         </div>
 
         <!-- Add Faculty View -->
-    <div id="addFacultyView" class="view space-y-6" style="display: none;">
+    <div id="addFacultyView" class="view space-y-6">
             <h2 class="text-3xl font-bold text-foreground mb-2">Add/Delete Faculty</h2>
             <div id="addFacultySection" class="admin-card" style="max-width: 500px; width: 100%; margin: 0 auto;">
                 <h3 class="text-xl font-semibold mb-4 flex items-center">
@@ -279,7 +277,9 @@
                 <form id="deleteFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
                     <div class="flex-1">
                         <label for="facultyDeleteSelect" class="block text-sm font-medium mb-1">Select Faculty</label>
-                        <select id="facultyDeleteSelect" class="custom-select w-full"></select>
+                        <select id="facultyDeleteSelect" class="custom-select w-full">
+                            <!-- Options will be populated by JS -->
+                        </select>
                     </div>
                     <button type="submit" class="btn btn-destructive btn-sm" style="width:120px;min-width:unset;">Delete</button>
                 </form>
@@ -290,82 +290,331 @@
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <script src="script.js"></script>
+
+    <script src="/static/script.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Ensure only adminView is visible on load
+    // View switching logic - make globally accessible
+    function showView(viewId) {
         const views = document.querySelectorAll('.view');
-        views.forEach(v => v.style.display = 'none');
-        const adminView = document.getElementById('adminView');
-        if (adminView) adminView.style.display = 'block';
+        views.forEach(v => {
+            v.classList.remove('active');
+            v.style.display = 'none';
+        });
+        const view = document.getElementById(viewId);
+        if (view) {
+            view.classList.add('active');
+            view.style.display = 'block';
+        }
+    }
 
-        // View switching logic
-        function showView(viewId) {
-            const views = document.querySelectorAll('.view');
-            views.forEach(v => v.style.display = 'none');
-            const view = document.getElementById(viewId);
-            if (view) view.style.display = 'block';
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check authentication
+        if (!isAuthenticated() || getCurrentUser()?.role !== 'admin') {
+            window.location.href = 'login.html';
+            return;
         }
-        // Navbar buttons
-        document.getElementById('adminBtn').addEventListener('click', function() { showView('adminView'); });
-        document.getElementById('timetableBtn').addEventListener('click', function() { showView('timetableView'); });
-        document.getElementById('facultyBtn').addEventListener('click', function() { showView('facultyView'); });
-        document.getElementById('addFacultyBtn').addEventListener('click', function() { showView('addFacultyView'); lucide.createIcons(); updateDeleteDropdown(); });
 
-        // Faculty management logic (from AddFaculty.html)
-        function getFacultyList() {
-            let list = [];
-            if (localStorage.getItem('facultyList')) {
-                try {
-                    list = JSON.parse(localStorage.getItem('facultyList'));
-                } catch (e) { list = []; }
-            }
-            return list;
-        }
-        function setFacultyList(list) {
-            localStorage.setItem('facultyList', JSON.stringify(list));
-        }
-        function updateDeleteDropdown() {
-            const select = document.getElementById('facultyDeleteSelect');
-            if (!select) return;
-            const list = getFacultyList();
-            select.innerHTML = '';
-            if (list.length === 0) {
-                select.innerHTML = '<option value="">No faculty available</option>';
+        // Initialize
+        lucide.createIcons();
+        setupEventListeners();
+        loadInitialData();
+
+        // Hide all views except adminView on load
+        const views = document.querySelectorAll('.view');
+        views.forEach(v => {
+            if (v.id === 'adminView') {
+                v.classList.add('active');
+                v.style.display = 'block';
             } else {
-                select.innerHTML = '<option value="">Select faculty</option>' + list.map(f => `<option value="${f}">${f}</option>`).join('');
+                v.classList.remove('active');
+                v.style.display = 'none';
             }
-        }
-        updateDeleteDropdown();
+        });
 
-        // Delete faculty logic
-        var deleteFacultyForm = document.getElementById('deleteFacultyForm');
-        if (deleteFacultyForm) {
-            deleteFacultyForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const select = document.getElementById('facultyDeleteSelect');
-                const msg = document.getElementById('deleteFacultyMsg');
-                const name = select.value;
-                if (name) {
-                    let list = getFacultyList();
-                    list = list.filter(f => f !== name);
-                    setFacultyList(list);
-                    msg.textContent = 'Faculty deleted!';
-                    msg.classList.remove('hidden');
-                    updateDeleteDropdown();
-                    setTimeout(() => msg.classList.add('hidden'), 1500);
+        // Navigation
+        document.getElementById('adminBtn').addEventListener('click', function() {
+            showView('adminView');
+        });
+        document.getElementById('timetableBtn').addEventListener('click', function() {
+            showView('timetableView');
+        });
+        document.getElementById('facultyBtn').addEventListener('click', function() {
+            showView('facultyView');
+            loadFacultyData();
+        });
+        document.getElementById('addFacultyBtn').addEventListener('click', function() {
+            showView('addFacultyView');
+            loadFacultyForDeletion();
+        });
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // Faculty view: fetch and display schedule for selected faculty
+        const facultySelect = document.getElementById('facultySelect');
+        if (facultySelect) {
+            facultySelect.addEventListener('change', async function() {
+                const facultyId = facultySelect.value;
+                if (!facultyId) {
+                    document.getElementById('facultyDetails').classList.add('hidden');
+                    document.getElementById('noFacultySelected').classList.remove('hidden');
+                    return;
+                }
+                // Fetch schedule from backend
+                const res = await fetch(`/api/faculty/${facultyId}/schedule`);
+                const result = await res.json();
+                if (result.success) {
+                    renderFacultySchedule(result.schedule);
+                    document.getElementById('facultyDetails').classList.remove('hidden');
+                    document.getElementById('noFacultySelected').classList.add('hidden');
+                } else {
+                    document.getElementById('facultyDetails').classList.add('hidden');
+                    document.getElementById('noFacultySelected').classList.remove('hidden');
                 }
             });
         }
+    });
 
-        // Update dropdown after add
-        var addFacultyForm = document.getElementById('addFacultyForm');
-        if (addFacultyForm) {
-            addFacultyForm.addEventListener('submit', function() {
-                setTimeout(updateDeleteDropdown, 200);
+    async function loadInitialData() {
+        try {
+            await Promise.all([
+                populateBranchDropdown(),
+                populateSectionDropdown(),
+                populateFacultyDropdown()
+            ]);
+        } catch (error) {
+            console.error('Failed to load initial data:', error);
+        }
+    }
+
+    // Fetch and populate branch (department) dropdown from DB
+    async function populateBranchDropdown() {
+        const select = document.getElementById('branchSelect');
+        select.innerHTML = '<option value="">Choose a branch</option>';
+        try {
+            const response = await fetch('/api/departments');
+            const result = await response.json();
+            if (result.success && Array.isArray(result.departments)) {
+                result.departments.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id;
+                    option.textContent = `${dept.name} (${dept.code})`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (err) {}
+    }
+
+    // Fetch and populate faculty dropdown from DB
+    async function populateFacultyDropdown() {
+        const select = document.getElementById('facultySelect');
+        select.innerHTML = '<option value="">Choose a faculty member</option>';
+        try {
+            const response = await fetch('/api/faculty');
+            const result = await response.json();
+            if (result.success && Array.isArray(result.faculty)) {
+                result.faculty.forEach(f => {
+                    const option = document.createElement('option');
+                    option.value = f.id;
+                    option.textContent = f.name;
+                    select.appendChild(option);
+                });
+            }
+        } catch (err) {}
+    }
+
+    // Fetch and populate section dropdown from DB (distinct sections from students table)
+    async function populateSectionDropdown() {
+        const select = document.getElementById('sectionSelect');
+        select.innerHTML = '<option value="">Choose a section</option>';
+        try {
+            const response = await fetch('/api/sections');
+            const result = await response.json();
+            if (result.success && Array.isArray(result.sections)) {
+                result.sections.forEach(section => {
+                    const option = document.createElement('option');
+                    option.value = section;
+                    option.textContent = `Section ${section}`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (err) {}
+    }
+
+    function loadSubjects(subjects) {
+        // Deprecated: Use loadDefaultSubjects instead
+        // This function is no longer used
+    }
+
+    async function loadFacultyData() {
+        try {
+            const faculty = await fetchFaculty();
+            populateFacultyViewDropdown(faculty);
+        } catch (error) {
+            console.error('Failed to load faculty data:', error);
+        }
+    }
+
+    function populateFacultyViewDropdown(faculty) {
+        const select = document.getElementById('facultySelect');
+        select.innerHTML = '<option value="">Choose a faculty member</option>' +
+            faculty.map(f => 
+                `<option value="${f.id}">${f.first_name} ${f.last_name}</option>`
+            ).join('');
+    }
+
+    async function loadFacultyForDeletion() {
+        try {
+            const faculty = await fetchFaculty();
+            const select = document.getElementById('facultyDeleteSelect');
+            select.innerHTML = '<option value="">Select faculty to delete</option>' +
+                faculty.map(f => 
+                    `<option value="${f.id}">${f.first_name} ${f.last_name}</option>`
+                ).join('');
+        } catch (error) {
+            console.error('Failed to load faculty for deletion:', error);
+        }
+    }
+
+    // Add faculty form handler (backend integration)
+    document.getElementById('addFacultyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const input = document.getElementById('facultyNameInput');
+        const msg = document.getElementById('addFacultyMsg');
+        const name = input.value.trim();
+        if (!name) return;
+        try {
+            const response = await fetch('/api/faculty', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
             });
+            const result = await response.json();
+            if (result.success) {
+                input.value = '';
+                msg.textContent = 'Faculty added!';
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 1500);
+                updateFacultyDeleteDropdown();
+            } else {
+                msg.textContent = 'Error: ' + (result.message || 'Could not add faculty');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 2000);
+            }
+        } catch (err) {
+            msg.textContent = 'Server error';
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 2000);
         }
     });
+
+    // Delete faculty form handler (backend integration)
+    document.getElementById('deleteFacultyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const select = document.getElementById('facultyDeleteSelect');
+        const msg = document.getElementById('deleteFacultyMsg');
+        const facultyId = select.value;
+        if (!facultyId) return;
+        try {
+            const response = await fetch(`/api/faculty/${facultyId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (result.success) {
+                msg.textContent = 'Faculty deleted!';
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 1500);
+                updateFacultyDeleteDropdown();
+                select.value = '';
+            } else {
+                msg.textContent = 'Error: ' + (result.message || 'Could not delete faculty');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 2000);
+            }
+        } catch (err) {
+            msg.textContent = 'Server error';
+            msg.classList.remove('hidden');
+            // Wire up Load Default Subjects button
+            const loadDefaultBtn = document.getElementById('loadDefaultBtn');
+            if (loadDefaultBtn) {
+                loadDefaultBtn.addEventListener('click', loadDefaultSubjects);
+            }
+            setTimeout(() => msg.classList.add('hidden'), 2000);
+        }
+    });
+
+    // Helper to update Delete Faculty dropdown (fetch from backend)
+    async function updateFacultyDeleteDropdown() {
+        const select = document.getElementById('facultyDeleteSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">Select faculty to delete</option>';
+        try {
+            const response = await fetch('/api/faculty');
+            const result = await response.json();
+            if (result.success && Array.isArray(result.faculty)) {
+                result.faculty.forEach(f => {
+                    const option = document.createElement('option');
+                    option.value = f.id;
+                    option.textContent = f.name;
+                    select.appendChild(option);
+                });
+            }
+        } catch (err) {
+            // Optionally show error
+        }
+    }
+
+    // On view switch to Add Faculty, update dropdown
+    document.getElementById('addFacultyBtn').addEventListener('click', () => {
+        updateFacultyDeleteDropdown();
+    });
+
+    // Render faculty schedule in the grid and stats
+    function renderFacultySchedule(schedule) {
+        // Calculate stats
+        const totalPeriods = schedule.length;
+        let theoryCount = 0, labCount = 0;
+        const subjects = new Set();
+        schedule.forEach(slot => {
+            subjects.add(slot.subject);
+            // Simple logic: if subject name contains 'Lab', count as lab
+            if (slot.subject.toLowerCase().includes('lab')) labCount++;
+            else theoryCount++;
+        });
+        document.getElementById('facultyTotalPeriods').textContent = totalPeriods;
+        document.getElementById('facultyTheoryCount').textContent = theoryCount;
+        document.getElementById('facultyLabCount').textContent = labCount;
+        document.getElementById('facultySubjectCount').textContent = subjects.size;
+
+        // Render subjects taught
+        const subjectsList = document.getElementById('facultySubjectsList');
+        subjectsList.innerHTML = '';
+        subjects.forEach(subj => {
+            const div = document.createElement('div');
+            div.className = 'p-2 bg-primary-10 rounded mb-2';
+            div.textContent = subj;
+            subjectsList.appendChild(div);
+        });
+
+        // Render schedule grid
+        const grid = document.getElementById('facultyScheduleGrid');
+        grid.innerHTML = '';
+        // Group by day_of_week
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        let daySlots = {};
+        schedule.forEach(slot => {
+            if (!daySlots[slot.day_of_week]) daySlots[slot.day_of_week] = [];
+            daySlots[slot.day_of_week].push(slot);
+        });
+        days.forEach((day, idx) => {
+            const col = document.createElement('div');
+            col.className = 'border p-2';
+            col.innerHTML = `<strong>${day}</strong><br>`;
+            const slots = daySlots[idx] || [];
+            slots.forEach(slot => {
+                col.innerHTML += `<div class='mb-1'><span class='font-bold'>${slot.subject}</span> <span class='text-xs'>(${slot.room})</span> <span class='text-xs'>Period ${slot.time_slot+1}</span></div>`;
+            });
+            grid.appendChild(col);
+        });
+    }
     </script>
 </body>
 </html>

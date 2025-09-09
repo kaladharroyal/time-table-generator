@@ -8,30 +8,29 @@ let subjects = [];
 let generatedTimetable = [];
 
 let facultyList = [];
-// Load facultyList from localStorage if available
-if (localStorage.getItem('facultyList')) {
+// Always fetch facultyList from backend
+async function fetchFacultyList() {
     try {
-        facultyList = JSON.parse(localStorage.getItem('facultyList'));
+        const res = await fetch('/api/faculty');
+        const result = await res.json();
+        if (result.success && Array.isArray(result.faculty)) {
+            facultyList = result.faculty.map(f => f.name);
+        } else {
+            facultyList = [];
+        }
     } catch (e) {
         facultyList = [];
     }
 }
-if (!facultyList.length) {
-    facultyList = [
-        'Dr. Smith Johnson', 'Prof. Sarah Wilson', 'Dr. Michael Brown', 
-        'Prof. Emily Davis', 'Dr. James Miller', 'Prof. Lisa Anderson',
-        'Dr. Robert Taylor', 'Prof. Jennifer Martinez'
-    ];
-}
 
 const defaultSubjects = [
-    { id: '1', name: 'Data Structures', type: 'theory', hours: 4, faculty: '' },
-    { id: '2', name: 'Database Management', type: 'theory', hours: 3, faculty: '' },
-    { id: '3', name: 'Operating Systems', type: 'theory', hours: 3, faculty: '' },
-    { id: '4', name: 'Computer Networks', type: 'theory', hours: 3, faculty: '' },
-    { id: '5', name: 'DS Lab', type: 'lab', hours: 2, faculty: '' },
-    { id: '6', name: 'DBMS Lab', type: 'lab', hours: 2, faculty: '' },
-    { id: '7', name: 'OS Lab', type: 'lab', hours: 2, faculty: '' }
+    { id: '1', name: 'Data Structures', type: 'theory', hours: 6, faculty: '' },
+    { id: '2', name: 'Database Management', type: 'theory', hours: 6, faculty: '' },
+    { id: '3', name: 'Operating Systems', type: 'theory', hours: 6, faculty: '' },
+    { id: '4', name: 'Computer Networks', type: 'theory', hours: 6, faculty: '' },
+    { id: '5', name: 'DS Lab', type: 'lab', hours: 3, faculty: '' },
+    { id: '6', name: 'DBMS Lab', type: 'lab', hours: 3, faculty: '' },
+    { id: '7', name: 'OS Lab', type: 'lab', hours: 3, faculty: '' }
 ];
 
 const timeSlots = {
@@ -72,11 +71,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     lucide.createIcons();
-    setupEventListeners();
-    updateGenerateButton();
-    populateFacultyDropdown();
-    document.getElementById('facultyBtn').addEventListener('click', () => switchView('faculty'));
-    document.getElementById('facultySelect').addEventListener('change', handleFacultySelect);
+    // Populate dropdowns first, then set up event listeners
+    Promise.all([
+        populateBranchDropdown(),
+        populateSectionDropdown(),
+        populateFacultyDropdown()
+    ]).then(() => {
+        setupEventListeners();
+        updateGenerateButton();
+        document.getElementById('facultyBtn').addEventListener('click', () => switchView('faculty'));
+        document.getElementById('facultySelect').addEventListener('change', handleFacultySelect);
+    });
 
     // Add Faculty form
     const addFacultyForm = document.getElementById('addFacultyForm');
@@ -104,22 +109,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 // Update all faculty dropdowns (subjects and faculty view)
-function updateAllFacultyDropdowns() {
-    // Save facultyList to localStorage
-    localStorage.setItem('facultyList', JSON.stringify(facultyList));
+async function updateAllFacultyDropdowns() {
+    await fetchFacultyList(); // Always get latest faculty from backend
     // Update subject faculty selects
     subjects.forEach(subject => {
         const facultySelect = document.getElementById(`faculty-${subject.id}`);
         if (facultySelect) {
             const current = facultySelect.value;
             facultySelect.innerHTML = '<option value="">Select faculty</option>' + facultyList.map(faculty => `<option value="${faculty}" ${current === faculty ? 'selected' : ''}>${faculty}</option>`).join('');
+            facultySelect.onchange = (e) => updateSubject(subject.id, { faculty: e.target.value });
         }
     });
     // Update faculty view dropdown
     const facultySelect = document.getElementById('facultySelect');
     if (facultySelect) {
         const current = facultySelect.value;
-        // Remove all except the first option
         while (facultySelect.options.length > 1) facultySelect.remove(1);
         facultyList.forEach(faculty => {
             const option = document.createElement('option');
@@ -278,10 +282,39 @@ function updateSelectionDisplay() {
 }
 
 // Subject Management
-function loadDefaultSubjects() {
-    subjects = JSON.parse(JSON.stringify(defaultSubjects)); // Deep copy to avoid modifying original array
-    renderSubjects();
-    updateGenerateButton();
+async function loadDefaultSubjects() {
+    // Fetch subjects and faculty from backend
+    try {
+        const [subjectsRes, facultyRes] = await Promise.all([
+            fetch('/api/subjects').then(res => res.json()),
+            fetch('/api/faculty').then(res => res.json())
+        ]);
+        if (subjectsRes.success && Array.isArray(subjectsRes.subjects) && subjectsRes.subjects.length > 0) {
+            subjects = subjectsRes.subjects.map(sub => ({
+                id: sub.id,
+                name: sub.name,
+                type: sub.type,
+                hours: sub.hours || 3,
+                faculty: ''
+            }));
+        } else {
+            // Use hardcoded defaultSubjects if backend returns none
+            subjects = [...defaultSubjects];
+        }
+        if (facultyRes.success && Array.isArray(facultyRes.faculty)) {
+            facultyList = facultyRes.faculty.map(f => f.name);
+        }
+        await renderSubjects();
+        updateGenerateButton();
+        await updateAllFacultyDropdowns();
+    } catch (err) {
+        // On error, fallback to default subjects
+        subjects = [...defaultSubjects];
+        await renderSubjects();
+        updateGenerateButton();
+        await updateAllFacultyDropdowns();
+        console.error('Failed to load subjects or faculty:', err);
+    }
 }
 
 function addSubject() {
@@ -311,7 +344,7 @@ function removeSubject(id) {
     updateGenerateButton();
 }
 
-function renderSubjects() {
+async function renderSubjects() {
     if (subjects.length === 0) {
         noSubjects.classList.remove('hidden');
         subjectsList.classList.add('hidden');
@@ -319,19 +352,17 @@ function renderSubjects() {
         noSubjects.classList.add('hidden');
         subjectsList.classList.remove('hidden');
         subjectsList.innerHTML = subjects.map(subject => createSubjectHTML(subject)).join('');
-        
+        await updateAllFacultyDropdowns(); // Ensure dropdowns are populated from backend
         // Add event listeners to newly created elements
         subjects.forEach(subject => {
             const nameInput = document.getElementById(`name-${subject.id}`);
             const typeSelect = document.getElementById(`type-${subject.id}`);
             const hoursInput = document.getElementById(`hours-${subject.id}`);
-            const facultySelect = document.getElementById(`faculty-${subject.id}`);
             const removeBtn = document.getElementById(`remove-${subject.id}`);
 
             nameInput.addEventListener('input', (e) => updateSubject(subject.id, { name: e.target.value }));
             typeSelect.addEventListener('change', (e) => updateSubject(subject.id, { type: e.target.value }));
             hoursInput.addEventListener('input', (e) => updateSubject(subject.id, { hours: parseInt(e.target.value) || 1 }));
-            facultySelect.addEventListener('change', (e) => updateSubject(subject.id, { faculty: e.target.value }));
             removeBtn.addEventListener('click', () => removeSubject(subject.id));
         });
     }
@@ -703,4 +734,43 @@ function downloadFile(content, filename) {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+// New: Populate Branch and Section dropdowns from backend
+async function populateBranchDropdown() {
+    const select = document.getElementById('branchSelect');
+    select.innerHTML = '<option value="">Choose a branch</option>';
+    try {
+        const response = await fetch('/api/programs');
+        const result = await response.json();
+        if (result.success && Array.isArray(result.programs)) {
+            result.programs.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.name; // Use department name as value
+                option.textContent = `${dept.name} (${dept.code})`;
+                select.appendChild(option);
+            });
+        }
+        select.removeEventListener('change', handleBranchChange);
+        select.addEventListener('change', handleBranchChange);
+    } catch (err) {}
+}
+
+async function populateSectionDropdown() {
+    const select = document.getElementById('sectionSelect');
+    select.innerHTML = '<option value="">Choose a section</option>';
+    try {
+        const response = await fetch('/api/sections');
+        const result = await response.json();
+        if (result.success && Array.isArray(result.sections)) {
+            result.sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section;
+                option.textContent = `Section ${section}`;
+                select.appendChild(option);
+            });
+        }
+        select.removeEventListener('change', handleSectionChange);
+        select.addEventListener('change', handleSectionChange);
+    } catch (err) {}
 }

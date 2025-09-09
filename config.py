@@ -1,14 +1,16 @@
-# config.py
+import os
+from datetime import timedelta
 
-import urllib.parse
-
-# URL-encode your password
-password = urllib.parse.quote_plus("Kaladhar*011")
-
-DB_USER = "root"
-DB_PASSWORD = "Kaladhar*011"
-DB_HOST = "localhost"
-DB_NAME = "timetable_db"
-
-SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+class Config:
+    # Database Configuration
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/time_table'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # JWT Configuration
+    JWT_SECRET_KEY = 'your-super-secret-jwt-key-change-in-production-2024'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    
+    # Algorithm Configuration
+    MAX_GENERATION_ATTEMPTS = 1000
+    TIMETABLE_DAYS = 5
+    TIMETABLE_SLOTS_PER_DAY = 8
