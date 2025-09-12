@@ -6,7 +6,7 @@ app = Flask(__name__, static_folder='static')
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Kaladhar*011',
+    'password': '**********',#your mysql password
     'database': 'time_table'
 }
 # Get all departments for dropdown
