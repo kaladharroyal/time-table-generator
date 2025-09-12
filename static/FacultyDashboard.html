@@ -26,185 +26,290 @@
                         <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
                         Logout
                     </button>
+                   
+                </div>
             </div>
         </div>
     </header>
+    
 
-    <!-- Faculty View (updated to match AdminDashboard.html) -->
-    <div id="facultyView" class="view active space-y-6">
-        <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Schedule View</h2>
-        <p class="text-muted-foreground">Select a faculty member to view their teaching schedule</p>
+    
+    <!-- Faculty Dashboard (newly added) -->
+    <div id="facultyDashboard" class="view hidden space-y-6">
+        <h2 class="text-3xl font-bold text-foreground mb-2">Faculty Timetable Dashboard</h2>
+        <p class="text-muted-foreground">Your personalized teaching schedule</p>
+         <!-- Add header user display -->
+          <p>welcome, <span id="headerUserName" class="ml-3 text-sm text-muted-foreground"></span></p>
         <div class="admin-card">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-semibold flex items-center">
-                    <i data-lucide="user" class="h-5 w-5 mr-2 text-primary"></i>
-                    Select Faculty
-                </h3>
-                <button id="downloadFacultyBtn" class="btn btn-outline btn-sm hidden">
-                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
-                    Download Schedule
-                </button>
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-semibold">Your Weekly Timetable</h3>
             </div>
-            <select id="facultySelect" class="custom-select max-w-md">
-                <option value="">Choose a faculty member</option>
-            </select>
-        </div>
-        <div id="facultyDetails" class="space-y-6 hidden">
-            <!-- Faculty Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="admin-card p-4">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="clock" class="h-4 w-4 text-primary"></i>
-                        <span class="text-sm font-medium">Total Periods</span>
+
+            <div id="facultyDetails" class="p-4">
+                <div class="grid grid-cols-1 gap-4 mb-4">
+                    <div>
+                        <div id="facultyScheduleGrid" class="timetable-grid"></div>
                     </div>
-                    <p id="facultyTotalPeriods" class="text-2xl font-bold mt-2">0</p>
                 </div>
-                <div class="admin-card p-4">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="book-open" class="h-4 w-4 text-blue-500"></i>
-                        <span class="text-sm font-medium">Theory Classes</span>
+
+                <div id="facultyStats" class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="space-y-2 md:col-span-1">
+                        <div>Total Periods: <strong id="facultyTotalPeriods">0</strong></div>
+                        <div>Theory: <strong id="facultyTheoryCount">0</strong></div>
+                        <div>Lab: <strong id="facultyLabCount">0</strong></div>
+                        <div>Subjects: <strong id="facultySubjectCount">0</strong></div>
                     </div>
-                    <p id="facultyTheoryCount" class="text-2xl font-bold mt-2">0</p>
+                    <!-- Reserve space for other summary cards if needed -->
+                    <div class="md:col-span-3"></div>
                 </div>
-                <div class="admin-card p-4">
-                    <div class="flex items-center space-x-2">
-                        <div class="h-4 w-4 bg-purple-500 rounded"></div>
-                        <span class="text-sm font-medium">Lab Sessions</span>
-                    </div>
-                    <p id="facultyLabCount" class="text-2xl font-bold mt-2">0</p>
-                </div>
-                <div class="admin-card p-4">
-                    <div class="flex items-center space-x-2">
-                        <div class="h-4 w-4 bg-green-500 rounded"></div>
-                        <span class="text-sm font-medium">Subjects</span>
-                    </div>
-                    <p id="facultySubjectCount" class="text-2xl font-bold mt-2">0</p>
+
+                <div class="mt-4">
+                    <h4 class="text-lg font-semibold">Subjects Taught</h4>
+                    <div id="facultySubjectsList" class="mt-2"></div>
                 </div>
             </div>
-            <!-- Faculty Schedule Grid -->
-            <div class="admin-card overflow-hidden">
-                <div class="p-6 border-b">
-                    <h3 id="facultyScheduleTitle" class="text-xl font-semibold">Weekly Schedule</h3>
+
+            <div id="noFacultySelected" class="p-6 text-center hidden">
+                <p>No timetable available for you yet.</p>
+                <div class="mt-4">
+                    <button id="loadSampleBtn" class="btn btn-primary" onclick="loadSampleFacultySchedule()">Load sample timetable</button>
                 </div>
-                <div id="facultyScheduleGrid" class="grid grid-cols-6 gap-0"></div>
             </div>
-            <!-- Subjects Taught -->
-            <div class="admin-card">
-                <h3 class="text-xl font-semibold mb-4">Subjects Taught</h3>
-                <div id="facultySubjectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            </div>
-        </div>
-        <div id="noFacultySelected" class="admin-card p-12 text-center">
-            <i data-lucide="user" class="h-16 w-16 mx-auto mb-4 text-muted-foreground"></i>
-            <h3 class="text-xl font-semibold mb-2">Select Faculty Member</h3>
-            <p class="text-muted-foreground">
-                Choose a faculty member from the dropdown above to view their schedule
-            </p>
         </div>
     </div>
 </body>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="/static/script.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            window.location.href = 'login.html';
+// Show only logged-in faculty timetable (Mon–Fri). Redirect others to login.
+document.addEventListener('DOMContentLoaded', async function() {
+    lucide.createIcons();
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+    });
+
+    // Get logged-in user from localStorage or window.currentUser
+    const user = window.currentUser || JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user || user.role !== 'faculty') {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Show header name and welcome (if elements exist)
+    const headerUser = document.getElementById('headerUserName');
+    if (headerUser) headerUser.textContent = user.name;
+    const welcomeEl = document.getElementById('facultyWelcome');
+    if (welcomeEl) welcomeEl.textContent = `Welcome, ${user.name}`;
+
+    // Always fetch and show the logged-in faculty's schedule
+    try {
+        const res = await fetch(`/api/faculty/${user.id}/schedule`);
+        if (!res.ok) {
+            const grid = document.getElementById('facultyScheduleGrid');
+            if (grid) grid.innerHTML = `<div class=\"p-6 text-center text-red-600\">Failed to load schedule (server error ${res.status}). Please contact admin.</div>`;
+            const fd = document.getElementById('facultyDetails'); if (fd) fd.classList.add('hidden');
+            const nf = document.getElementById('noFacultySelected'); if (nf) nf.classList.remove('hidden');
+            return;
+        }
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.schedule)) {
+            if (typeof renderFacultyScheduleGrid === 'function') renderFacultyScheduleGrid(json.schedule);
+            const fd = document.getElementById('facultyDetails'); if (fd) fd.classList.remove('hidden');
+            const nf = document.getElementById('noFacultySelected'); if (nf) nf.classList.add('hidden');
+            const dash = document.getElementById('facultyDashboard'); if (dash) { dash.classList.remove('hidden'); dash.classList.add('active'); }
+        } else {
+            const grid = document.getElementById('facultyScheduleGrid');
+            if (grid) grid.innerHTML = `<div class=\"p-6 text-center text-muted-foreground\">No timetable available.</div>`;
+            const fd = document.getElementById('facultyDetails'); if (fd) fd.classList.add('hidden');
+            const nf = document.getElementById('noFacultySelected'); if (nf) nf.classList.remove('hidden');
+        }
+    } catch (err) {
+        const grid = document.getElementById('facultyScheduleGrid');
+        if (grid) grid.innerHTML = `<div class=\"p-6 text-center text-red-600\">Unable to fetch schedule. Check your network or server logs.</div>`;
+        const fd = document.getElementById('facultyDetails'); if (fd) fd.classList.add('hidden');
+        const nf = document.getElementById('noFacultySelected'); if (nf) nf.classList.remove('hidden');
+    }
+});
+
+function normalizePeriod(slotVal) {
+    if (slotVal === null || slotVal === undefined) return null;
+    if (typeof slotVal === 'string') {
+        if (/^P\d+$/.test(slotVal)) return slotVal;
+        if (slotVal === 'Break' || slotVal === 'Lunch') return slotVal;
+        if (/^\d+$/.test(slotVal)) return 'P' + slotVal;
+    }
+    if (typeof slotVal === 'number') {
+        if (slotVal === 0) return 'Break';
+        if (slotVal === -1) return 'Lunch';
+        return 'P' + slotVal;
+    }
+    return null;
+}
+
+function renderFacultyScheduleGrid(schedule) {
+    // Stats and subject list
+    const totalPeriods = schedule.length;
+    let theoryCount = 0, labCount = 0;
+    const subjSet = new Set();
+    schedule.forEach(s => {
+        if (s.subject) subjSet.add(s.subject);
+        if (s.subject && /lab/i.test(s.subject)) labCount++; else theoryCount++;
+    });
+    const subjectsCount = subjSet.size;
+    const totalEl = document.getElementById('facultyTotalPeriods');
+    const thEl = document.getElementById('facultyTheoryCount');
+    const labEl = document.getElementById('facultyLabCount');
+    const subEl = document.getElementById('facultySubjectCount');
+    if (totalEl) totalEl.textContent = totalPeriods;
+    if (thEl) thEl.textContent = theoryCount;
+    if (labEl) labEl.textContent = labCount;
+    if (subEl) subEl.textContent = subjectsCount;
+
+    // Subjects list
+    const subjectsList = document.getElementById('facultySubjectsList');
+    if (subjectsList) {
+        subjectsList.innerHTML = '';
+        subjSet.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'p-2 bg-primary-10 rounded mb-2';
+            div.textContent = name;
+            subjectsList.appendChild(div);
         });
     }
 
-    // Populate faculty dropdown from backend
-    populateFacultyDropdown();
+    // Build MON–SAT grid
+    const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const periods = ['P1','P2','Break','P3','P4','Lunch','P5','P6','P7'];
+    const grid = document.getElementById('facultyScheduleGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = `minmax(100px, 1fr) repeat(${periods.length}, minmax(90px, 1fr))`;
 
-    // When faculty is selected, fetch and display their schedule
-    const facultySelect = document.getElementById('facultySelect');
-    facultySelect.addEventListener('change', async function() {
-        const facultyId = facultySelect.value;
-        if (!facultyId) {
-            document.getElementById('facultyDetails').classList.add('hidden');
-            document.getElementById('noFacultySelected').classList.remove('hidden');
-            return;
-        }
-        // Fetch schedule from backend
-        const res = await fetch(`/api/faculty/${facultyId}/schedule`);
-        const result = await res.json();
-        if (result.success) {
-            renderFacultySchedule(result.schedule);
-            document.getElementById('facultyDetails').classList.remove('hidden');
-            document.getElementById('noFacultySelected').classList.add('hidden');
-        } else {
-            document.getElementById('facultyDetails').classList.add('hidden');
-            document.getElementById('noFacultySelected').classList.remove('hidden');
-        }
+    // Header
+    let headerHtml = `<div class="timetable-header">Day / Time</div>`;
+    periods.forEach(p => headerHtml += `<div class="timetable-header text-sm"><div class="font-semibold">${p}</div></div>`);
+    grid.innerHTML += headerHtml;
+
+    // Map schedule by day->period
+    const map = {};
+    schedule.forEach(s => {
+        const day = s.day_of_week;
+        const period = normalizePeriod(s.time_slot);
+        if (!day || !period) return;
+        map[day] = map[day] || {};
+        map[day][period] = s;
     });
-});
 
-// Helper to populate faculty dropdown
-async function populateFacultyDropdown() {
-    const select = document.getElementById('facultySelect');
-    select.innerHTML = '<option value="">Choose a faculty member</option>';
-    try {
-        const response = await fetch('/api/faculty');
-        const result = await response.json();
-        if (result.success && Array.isArray(result.faculty)) {
-            result.faculty.forEach(f => {
-                const option = document.createElement('option');
-                option.value = f.id;
-                option.textContent = f.name;
-                select.appendChild(option);
-            });
-        }
-    } catch (err) {}
+    days.forEach(day => {
+        let rowHtml = `<div class="timetable-header">${day}</div>`;
+        periods.forEach(period => {
+            let slot = (map[day] && map[day][period]) || null;
+            let cellClass = 'timetable-cell';
+            if (period === 'Break') cellClass += ' period-break';
+            if (period === 'Lunch') cellClass += ' period-lunch';
+            let cellContent = '';
+            if (slot) {
+                // If break/lunch, show only break/lunch
+                if (period === 'Break') {
+                    cellContent = `<div class='font-medium text-sm'>Break</div>`;
+                } else if (period === 'Lunch') {
+                    cellContent = `<div class='font-medium text-sm'>Lunch Break</div>`;
+                } else {
+                    cellContent = `<div class="font-medium text-sm">${slot.subject || ''}</div>` +
+                                  `<div class="text-xs">${slot.section || slot.class_name || ''} ${slot.room ? '| ' + slot.room : ''}</div>`;
+                }
+            } else {
+                // If no slot, but period is break/lunch, show break/lunch
+                if (period === 'Break') {
+                    cellContent = `<div class='font-medium text-sm'>Break</div>`;
+                } else if (period === 'Lunch') {
+                    cellContent = `<div class='font-medium text-sm'>Lunch Break</div>`;
+                } else {
+                    cellContent = `<div class="text-xs text-muted-foreground">&nbsp;</div>`;
+                }
+            }
+            rowHtml += `<div class="${cellClass}">${cellContent}</div>`;
+        });
+        grid.innerHTML += rowHtml;
+    });
+    setTimeout(() => lucide.createIcons(), 0);
 }
 
-// Render faculty schedule in the grid and stats
-function renderFacultySchedule(schedule) {
-    // Calculate stats
-    const totalPeriods = schedule.length;
-    let theoryCount = 0, labCount = 0;
-    const subjects = new Set();
-    schedule.forEach(slot => {
-        subjects.add(slot.subject);
-        // Simple logic: if subject name contains 'Lab', count as lab
-        if (slot.subject.toLowerCase().includes('lab')) labCount++;
-        else theoryCount++;
-    });
-    document.getElementById('facultyTotalPeriods').textContent = totalPeriods;
-    document.getElementById('facultyTheoryCount').textContent = theoryCount;
-    document.getElementById('facultyLabCount').textContent = labCount;
-    document.getElementById('facultySubjectCount').textContent = subjects.size;
+function loadSampleFacultySchedule() {
+    // Sample static data for faculty schedule (normally fetched from server)
+    const sampleSchedule = [
+        { day_of_week: 'Monday', time_slot: 'P1', subject: 'Math', section: 'A', room: '101' },
+        { day_of_week: 'Monday', time_slot: 'P2', subject: 'Physics', section: 'B', room: '102' },
+        { day_of_week: 'Monday', time_slot: 'Break' },
+        { day_of_week: 'Monday', time_slot: 'P3', subject: 'Chemistry', section: 'A', room: '103' },
+        { day_of_week: 'Monday', time_slot: 'P4', subject: 'Biology', section: 'B', room: '104' },
+        { day_of_week: 'Monday', time_slot: 'Lunch' },
+        { day_of_week: 'Monday', time_slot: 'P5', subject: 'English', section: 'A', room: '105' },
+        { day_of_week: 'Monday', time_slot: 'P6', subject: 'History', section: 'B', room: '106' },
+        { day_of_week: 'Monday', time_slot: 'P7', subject: 'Geography', section: 'A', room: '107' },
+        // ... more sample data for other days and periods
+    ];
+    renderFacultyScheduleGrid(sampleSchedule);
+}
 
-    // Render subjects taught
-    const subjectsList = document.getElementById('facultySubjectsList');
-    subjectsList.innerHTML = '';
-    subjects.forEach(subj => {
-        const div = document.createElement('div');
-        div.className = 'p-2 bg-primary-10 rounded mb-2';
-        div.textContent = subj;
-        subjectsList.appendChild(div);
-    });
+// Build a simple schedule from subjects assigned to a faculty (distribute hours across days/periods)
+async function buildScheduleFromFacultySubjects(facultyId) {
+    try {
+        // Try API
+        let subjectsData = [];
+        try {
+            const res = await fetch('/api/subjects');
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.subjects)) subjectsData = data.subjects;
+        } catch (e) {
+            // ignore
+        }
+        // Fallback to global subjects arrays if available
+        if ((!subjectsData || subjectsData.length === 0) && (window.subjectsArr && window.subjectsArr.length > 0)) {
+            subjectsData = window.subjectsArr;
+        }
+        if ((!subjectsData || subjectsData.length === 0) && (window.subjects && window.subjects.length > 0)) {
+            subjectsData = window.subjects;
+        }
+        if ((!subjectsData || subjectsData.length === 0) && (typeof defaultSubjects !== 'undefined')) {
+            subjectsData = defaultSubjects.map(s => ({ name: s.name, hours: s.hours, type: s.type, faculty_id: s.faculty }));
+        }
 
-    // Render schedule grid
-    const grid = document.getElementById('facultyScheduleGrid');
-    grid.innerHTML = '';
-    // Group by day_of_week
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    let daySlots = {};
-    schedule.forEach(slot => {
-        if (!daySlots[slot.day_of_week]) daySlots[slot.day_of_week] = [];
-        daySlots[slot.day_of_week].push(slot);
-    });
-    days.forEach((day, idx) => {
-        const col = document.createElement('div');
-        col.className = 'border p-2';
-        col.innerHTML = `<strong>${day}</strong><br>`;
-        const slots = daySlots[idx] || [];
-        slots.forEach(slot => {
-            col.innerHTML += `<div class='mb-1'><span class='font-bold'>${slot.subject}</span> <span class='text-xs'>(${slot.room})</span> <span class='text-xs'>Period ${slot.time_slot+1}</span></div>`;
-        });
-        grid.appendChild(col);
-    });
+        // Normalize facultyId to string for comparison
+        const fid = String(facultyId);
+        console.log('Loading subjects for facultyId=', fid, 'subjectsData length=', subjectsData.length);
+        const facultySubjects = subjectsData.filter(s => String(s.faculty_id || s.faculty || s.facultyId || '').trim() === fid.trim());
+        console.log('Filtered facultySubjects:', facultySubjects);
+        if (facultySubjects.length === 0) return [];
+
+        const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const periods = ['P1','P2','P3','P4','P5','P6','P7']; // skip Break/Lunch for auto-placement
+        const schedule = [];
+
+        let dayIdx = 0;
+        let periodIdx = 0;
+
+        // Round-robin place each subject hour across days/periods
+        for (const subj of facultySubjects) {
+            const hours = Math.max(1, Number(subj.hours) || 1);
+            for (let h = 0; h < hours; h++) {
+                const day = days[dayIdx % days.length];
+                const time_slot = periods[periodIdx % periods.length];
+                schedule.push({ day_of_week: day, time_slot, subject: subj.name || subj.subject || '', section: subj.section || '', room: subj.room || '' });
+                periodIdx++;
+                if (periodIdx % periods.length === 0) dayIdx++;
+            }
+        }
+
+        console.log('Final auto-generated schedule for faculty', fid, schedule);
+        return schedule;
+    } catch (err) {
+        console.error('Failed to build schedule from subjects:', err);
+        return [];
+    }
 }
 </script>
 </html>

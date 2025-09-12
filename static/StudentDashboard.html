@@ -8,14 +8,17 @@
 </head>
 <body>
 	<header class="university-header">
-		<div class="container mx-auto px-6 py-4 flex items-center justify-between">
-			<h1 class="text-2xl font-bold">Student Dashboard</h1>
-			<button id="logoutBtn" class="btn btn-outline btn-sm">
-				<i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
-				Logout
-			</button>
-		</div>
-	</header>
+        <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold">Student Dashboard</h1>
+            <div>
+                
+                <button id="logoutBtn" class="btn btn-outline btn-sm">
+                    <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
 	<main class="container mx-auto px-6 py-8">
 		<!-- Student content here -->        
 		<h2 class="text-3xl font-bold text-foreground mb-4">Welcome, Student!</h2>
@@ -27,7 +30,151 @@
 		
 
 	</main>
-	<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-	<script src="/static/script.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="/static/script.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', async function() {
+    lucide.createIcons();
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+    }
+    // Use correct localStorage key for user
+    const user = window.currentUser || JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user || user.role !== 'student') {
+        window.location.href = 'login.html';
+        return;
+    }
+    // Show welcome
+    const heading = document.querySelector('h2');
+    if (heading) heading.textContent = `Welcome, ${user.name}`;
+
+    // Fetch classes, subjects, faculty (for lookups)
+    const [classesRes, subjectsRes, facultyRes, roomsRes] = await Promise.all([
+        fetch('/api/classes').then(r => r.json()),
+        fetch('/api/subjects').then(r => r.json()),
+        fetch('/api/faculty').then(r => r.json()),
+        fetch('/api/rooms').then(r => r.json())
+    ]);
+    const classes = (classesRes.success && Array.isArray(classesRes.classes)) ? classesRes.classes : [];
+    const subjects = (subjectsRes.success && Array.isArray(subjectsRes.subjects)) ? subjectsRes.subjects : [];
+    const faculty = (facultyRes.success && Array.isArray(facultyRes.faculty)) ? facultyRes.faculty : [];
+    const rooms = (roomsRes.success && Array.isArray(roomsRes.rooms)) ? roomsRes.rooms : [];
+
+    // Show student name in header
+    const headerUser = document.getElementById('headerUserName');
+    if (headerUser) headerUser.textContent = user.name;
+
+    // Determine class id from user's section (user.section expected like 'CSE-A')
+    let classId = null;
+    if (user.section) {
+        const cls = classes.find(c => String(c.name).toLowerCase() === String(user.section).toLowerCase());
+        if (cls) classId = cls.id;
+    }
+
+    // Always show only the student's section timetable
+    if (classId) {
+        await loadClassTimetable(classId, subjects, faculty, rooms, classes);
+    } else {
+        // If no class found, show message only (no dropdown)
+        const container = document.getElementById('classSchedule');
+        container.innerHTML = `<div class="text-center py-4 text-muted-foreground">No class found for your section. Please contact admin.</div>`;
+    }
+});
+
+function normalizePeriod(slotVal) {
+    if (slotVal === null || slotVal === undefined) return null;
+    if (typeof slotVal === 'string') {
+        if (/^P\d+$/.test(slotVal)) return slotVal;
+        if (slotVal === 'Break' || slotVal === 'Lunch') return slotVal;
+        if (/^\d+$/.test(slotVal)) return 'P' + slotVal;
+    }
+    if (typeof slotVal === 'number') {
+        if (slotVal === 0) return 'Break';
+        if (slotVal === -1) return 'Lunch';
+        return 'P' + slotVal;
+    }
+    return null;
+}
+
+function renderClassSchedule(timetable, subjects, faculty, classes, rooms) {
+    const container = document.getElementById('classSchedule');
+    container.innerHTML = '';
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
+
+    // Use tighter min-widths so columns fit the screen, allow fluid distribution
+    let gridHtml = '<div class="timetable-grid" style="display:grid;grid-template-columns:minmax(110px,1fr) repeat(' + periods.length + ',minmax(80px,1fr));width:100%;">';
+    gridHtml += '<div class="timetable-header">Day / Time</div>';
+    periods.forEach(period => {
+        gridHtml += `<div class="timetable-header text-sm"><div class="font-semibold">${period}</div></div>`;
+    });
+
+    // Map timetable entries for quick lookup
+    const map = {};
+    timetable.forEach(s => {
+        const day = s.day_of_week;
+        const period = normalizePeriod(s.time_slot);
+        if (!day || !period) return;
+        map[day] = map[day] || {};
+        map[day][period] = s; // last one wins
+    });
+
+    days.forEach(day => {
+        gridHtml += `<div class="timetable-header">${day}</div>`;
+        periods.forEach(period => {
+            let slot = (map[day] && map[day][period]) || null;
+            let cellClass = 'timetable-cell';
+            if (period === 'Break') cellClass += ' period-break';
+            if (period === 'Lunch') cellClass += ' period-lunch';
+            let cellContent = '';
+            if (slot) {
+                // If break/lunch, show only break/lunch
+                if (period === 'Break') {
+                    cellContent = `<div class='font-medium text-sm'>Break</div>`;
+                } else if (period === 'Lunch') {
+                    cellContent = `<div class='font-medium text-sm'>Lunch Break</div>`;
+                } else {
+                    const subj = subjects.find(x => String(x.id) === String(slot.subject_id)) || subjects.find(x => x.name === slot.subject);
+                    const fac = faculty.find(x => String(x.id) === String(slot.faculty_id));
+                    const room = (slot.room_id && rooms.find(r => String(r.id) === String(slot.room_id))) || rooms.find(r => r.name === slot.room) || { name: '' };
+                    cellContent = `<div class='font-medium text-sm' style="white-space:normal;">${subj ? subj.name : (slot.subject || 'Subject')}</div>` +
+                                  `<div class='text-xs text-muted-foreground' style="margin-top:4px;white-space:normal;">${fac ? fac.name : (slot.faculty || '')}${room.name ? ' | ' + room.name : ''}</div>`;
+                }
+            } else {
+                // If no slot, but period is break/lunch, show break/lunch
+                if (period === 'Break') {
+                    cellContent = `<div class='font-medium text-sm'>Break</div>`;
+                } else if (period === 'Lunch') {
+                    cellContent = `<div class='font-medium text-sm'>Lunch Break</div>`;
+                } else {
+                    cellContent = '<span class="text-xs text-muted-foreground">&nbsp;</span>';
+                }
+            }
+            gridHtml += `<div class="${cellClass}" style="padding:8px;min-height:48px;">${cellContent}</div>`;
+        });
+    });
+    gridHtml += '</div>';
+    container.innerHTML = gridHtml;
+    setTimeout(() => lucide.createIcons(), 0);
+}
+
+async function loadClassTimetable(classId, subjects, faculty, rooms, classes) {
+    try {
+        const res = await fetch(`/api/timetable/class/${classId}`);
+        const result = await res.json();
+        if (result.success && Array.isArray(result.timetable)) {
+            renderClassSchedule(result.timetable, subjects, faculty, classes, rooms);
+        } else {
+            document.getElementById('classSchedule').innerHTML = '<div class="text-center py-8 text-muted-foreground">No timetable found for this class.</div>';
+        }
+    } catch (err) {
+        console.error('Failed to load class timetable:', err);
+        document.getElementById('classSchedule').innerHTML = '<div class="text-center py-8 text-muted-foreground">Failed to load timetable. Check console.</div>';
+    }
+}
+    </script>
 </body>
 </html>

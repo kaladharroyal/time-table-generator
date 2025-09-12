@@ -174,7 +174,7 @@
         <form id="login-form">
             <div class="form-group">
                 <label for="username">ID / Email</label>
-                <input type="text" id="username" placeholder="e.g., 23CSE001 or ram@college.com" required>
+                <input type="text" id="username" placeholder="username" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
@@ -199,13 +199,13 @@ if (tabButtons && usernameInput) {
             button.classList.add('active');
             activeRole = button.dataset.role;
             if (activeRole === 'student') {
-                usernameInput.placeholder = 'e.g., 23CSE001';
+                usernameInput.placeholder = 'e.g., cse1';
                 document.querySelector('label[for="username"]').textContent = 'Roll No.';
             } else if (activeRole === 'faculty') {
-                usernameInput.placeholder = 'e.g., ram@college.com';
+                usernameInput.placeholder = 'e.g., faculty1';
                 document.querySelector('label[for="username"]').textContent = 'Email';
             } else if (activeRole === 'admin') {
-                usernameInput.placeholder = 'admin';
+                usernameInput.placeholder = '';
                 document.querySelector('label[for="username"]').textContent = 'Username';
             }
         });

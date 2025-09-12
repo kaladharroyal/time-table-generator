@@ -34,10 +34,6 @@
                         <i data-lucide="users" class="h-4 w-4 mr-2"></i>
                         Faculty View
                     </button>
-                    <button id="addFacultyBtn" class="nav-btn">
-                        <i data-lucide="user-plus" class="h-4 w-4 mr-2"></i>
-                        Add Faculty
-                    </button>
                     <button id="logoutBtn" class="btn btn-outline btn-sm">
                         <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
                         Logout
@@ -77,15 +73,13 @@
                         </select>
                     </div>
                     <div class="space-y-2">
-                        <label for="sectionSelect" class="block text-sm font-medium">Select Section</label>
-                        <select id="sectionSelect" class="custom-select">
-                            <option value="">Choose a section</option>
-                            <select id="sectionSelect" class="custom-select">
-                            <option value="A"></option>
-                            <option value="B"></option>
-                            <option value="C"></option>
-                            <!-- Section options will be populated dynamically by JS -->
-                        </select>
+                        <label class="block text-sm font-medium">Select Section(s)</label>
+                        <div id="sectionCheckboxes" class="flex flex-wrap gap-2">
+                            <!-- Section checkboxes will be populated dynamically by JS -->
+                        </div>
+                        <button id="confirmSectionBtn" class="btn btn-outline btn-sm mt-2">Confirm Section Selection</button>
+                        <small class="text-xs text-muted-foreground block">Select one or more sections</small>
+                        <button id="viewSectionTimetableBtn" class="btn btn-outline btn-sm mt-2">View Timetable for Selected Section</button>
                     </div>
                 </div>
                 <div id="selectionDisplay" class="mt-4 p-3 bg-primary-10 rounded-lg hidden">
@@ -125,12 +119,16 @@
                     <p class="text-muted-foreground">
                         Create a timetable based on the selected criteria
                     </p>
+                    <button id="generateAllSectionBtn" class="btn btn-primary btn-lg w-full md:w-auto">
+                        <i data-lucide="calendar" class="h-5 w-5 mr-2"></i>
+                        Generate Timetables for All Sections
+                    </button>
                     <button id="generateBtn" class="btn btn-primary btn-lg w-full md:w-auto" disabled>
                         <i data-lucide="calendar" class="h-5 w-5 mr-2"></i>
-                        Generate Timetable
+                        Generate Timetable (Selected Section)
                     </button>
                     <p id="generateHelp" class="text-sm text-muted-foreground">
-                        Please select branch, section, and add subjects to generate a timetable
+                        Please select branch, section(s), and add subjects to generate a timetable
                     </p>
                 </div>
             </div>
@@ -148,10 +146,17 @@
                     Download
                 </button>
             </div>
-
+            <div id="sectionSelectorContainer" style="margin-bottom: 16px; display: flex; gap: 8px;"></div>
             <div class="admin-card">
                 <div id="timetableGrid" class="timetable-grid"></div>
                 <div id="facultyListContainer" class="mt-6"></div>
+                <!-- Save Timetable Button -->
+                <div class="mt-6 text-center">
+                    <button id="saveTimetableBtn" class="btn btn-success btn-lg">
+                        <i data-lucide="save" class="h-5 w-5 mr-2"></i>
+                        Save Timetable to Database
+                    </button>
+                </div>
             </div>
 
             <!-- Statistics -->
@@ -231,6 +236,12 @@
                         <p id="facultySubjectCount" class="text-2xl font-bold mt-2">0</p>
                     </div>
                 </div>
+                <!-- Faculty Section Filter -->
+                <div class="admin-card p-4 mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Section Filter</h3>
+                    <div id="facultySectionSelectorContainer" class="flex flex-wrap gap-2"></div>
+                </div>
+                
                 <!-- Faculty Schedule Grid -->
                 <div class="admin-card overflow-hidden">
                     <div class="p-6 border-b">
@@ -371,6 +382,45 @@
                 }
             });
         }
+
+        // Download button for timetable view
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            // Use the downloadTimetable function from script.js
+            if (typeof downloadTimetable === 'function') {
+                downloadTimetable();
+            } else {
+                // Fallback: download dummy timetable
+                let content = 'Timetable\n====================\nNo timetable data found.';
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'timetable.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+        // Download button for faculty view (optional: download faculty schedule)
+        const downloadFacultyBtn = document.getElementById('downloadFacultyBtn');
+        if (downloadFacultyBtn) {
+            downloadFacultyBtn.classList.remove('hidden');
+            downloadFacultyBtn.addEventListener('click', function() {
+                const facultySelect = document.getElementById('facultySelect');
+                const facultyId = facultySelect.value;
+                if (!facultyId) return;
+                // Download the faculty schedule as text
+                let content = 'Faculty Schedule\n';
+                content += '='.repeat(30) + '\n';
+                const scheduleGrid = document.getElementById('facultyScheduleGrid');
+                if (scheduleGrid) {
+                    content += scheduleGrid.innerText || '';
+                }
+                const facultyName = facultySelect.options[facultySelect.selectedIndex].text;
+                downloadFile(content, `faculty-schedule-${facultyName}.txt`);
+            });
+        }
     });
 
     async function loadInitialData() {
@@ -421,19 +471,21 @@
         } catch (err) {}
     }
 
-    // Fetch and populate section dropdown from DB (distinct sections from students table)
+    // Fetch and populate section checkboxes from DB (distinct sections from students table)
     async function populateSectionDropdown() {
-        const select = document.getElementById('sectionSelect');
-        select.innerHTML = '<option value="">Choose a section</option>';
+        const container = document.getElementById('sectionCheckboxes');
+        if (!container) return;
+        container.innerHTML = '';
         try {
             const response = await fetch('/api/sections');
             const result = await response.json();
             if (result.success && Array.isArray(result.sections)) {
                 result.sections.forEach(section => {
-                    const option = document.createElement('option');
-                    option.value = section;
-                    option.textContent = `Section ${section}`;
-                    select.appendChild(option);
+                    const id = `section-checkbox-${section}`;
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center gap-1';
+                    label.innerHTML = `<input type="checkbox" value="${section}" id="${id}" class="section-checkbox"> Section ${section}`;
+                    container.appendChild(label);
                 });
             }
         } catch (err) {}
@@ -566,6 +618,17 @@
     document.getElementById('addFacultyBtn').addEventListener('click', () => {
         updateFacultyDeleteDropdown();
     });
+
+    // Section confirm button
+    const confirmSectionBtn = document.getElementById('confirmSectionBtn');
+    if (confirmSectionBtn) {
+        confirmSectionBtn.addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.section-checkbox');
+            selectedSections = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            updateSelectionDisplay();
+            updateGenerateButton();
+        });
+    }
 
     // Render faculty schedule in the grid and stats
     function renderFacultySchedule(schedule) {

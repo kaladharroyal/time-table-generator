@@ -28,12 +28,12 @@ const defaultSubjects = [
     { id: '2', name: 'Database Management', type: 'theory', hours: 6, faculty: '' },
     { id: '3', name: 'Operating Systems', type: 'theory', hours: 6, faculty: '' },
     { id: '4', name: 'Computer Networks', type: 'theory', hours: 6, faculty: '' },
-    { id: '5', name: 'Software Engineering', type: 'theory', hours: 6, faculty: '' },
+    { id: '5', name: 'NLP', type: 'theory', hours: 3, faculty: '' },
     { id: '6', name: 'DS Lab', type: 'lab', hours: 3, faculty: '' },
     { id: '7', name: 'DBMS Lab', type: 'lab', hours: 3, faculty: '' },
     { id: '8', name: 'OS Lab', type: 'lab', hours: 3, faculty: '' },
-    { id: '9', name: 'CN Lab', type: 'lab', hours: 3, faculty: '' },
-    { id: '10', name: 'SE Lab', type: 'lab', hours: 3, faculty: '' },
+    { id: '9', name: 'COUN', type: 'theory', hours: 2, faculty: '' },
+    { id: '10', name: 'SPORTS', type: 'theory', hours: 2, faculty: '' },
     { id: '11', name: 'LIB', type: 'theory', hours: 2, faculty: '' }
 ];
 
@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function() {
     ]).then(() => {
         setupEventListeners();
         updateGenerateButton();
+        document.getElementById('facultyBtn').addEventListener('click', () => switchView('faculty'));
+        document.getElementById('facultySelect').addEventListener('change', handleFacultySelect);
     });
 
     // Add Faculty form
@@ -96,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const msg = document.getElementById('addFacultyMsg');
             const name = input.value.trim();
             if (name && !facultyList.includes(name)) {
-                // Add faculty to backend (if you have an API for this
+                // Add faculty to backend (if you have an API for this)
                 await fetch('/api/faculty', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -160,14 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
             updateGenerateButton();
         };
     }
-
-    // Add event listener for Save Timetable button
-    const saveTimetableBtn = document.getElementById('saveTimetableBtn');
-    if (saveTimetableBtn) {
-        saveTimetableBtn.addEventListener('click', function() {
-            saveGeneratedTimetable(generatedTimetable);
-        });
-    }
 });
 // Update all faculty dropdowns (subjects and faculty view)
 async function updateAllFacultyDropdowns() {
@@ -199,52 +193,38 @@ async function updateAllFacultyDropdowns() {
 // Event Listeners
 function setupEventListeners() {
     // Navigation
-    if (adminBtn) adminBtn.addEventListener('click', () => switchView('admin'));
-    if (timetableBtn) timetableBtn.addEventListener('click', () => switchView('timetable'));
-    // Faculty button may exist only on some pages
-    const facultyBtn = document.getElementById('facultyBtn');
-    if (facultyBtn) {
-        facultyBtn.addEventListener('click', () => switchView('faculty'));
-    }
+    adminBtn.addEventListener('click', () => switchView('admin'));
+    timetableBtn.addEventListener('click', () => switchView('timetable'));
 
-    // Branch and Section (only if present on the page)
-    if (branchSelect) branchSelect.addEventListener('change', handleBranchChange);
-    if (sectionSelect) sectionSelect.addEventListener('change', handleSectionChange);
+    // Branch and Section
+    branchSelect.addEventListener('change', handleBranchChange);
+    sectionSelect.addEventListener('change', handleSectionChange);
 
-    // Subject Management buttons
-    if (loadDefaultBtn) loadDefaultBtn.addEventListener('click', loadDefaultSubjects);
-    if (addSubjectBtn) addSubjectBtn.addEventListener('click', addSubject);
-    if (generateBtn) generateBtn.addEventListener('click', generateTimetable);
+    // Subject Management
+    loadDefaultBtn.addEventListener('click', loadDefaultSubjects);
+    addSubjectBtn.addEventListener('click', addSubject);
+    generateBtn.addEventListener('click', generateTimetable);
 
     // Download
-    if (downloadBtn) downloadBtn.addEventListener('click', downloadTimetable);
+    downloadBtn.addEventListener('click', downloadTimetable);
 }
 
 // Navigation
 function switchView(view) {
-    // Hide all views
-    document.querySelectorAll('.view').forEach(viewElement => {
-        viewElement.classList.remove('active');
-        viewElement.style.display = 'none';
-    });
-    // Remove active from all nav buttons
+    currentView = view;
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    // Show the selected view and set nav button active
+    document.querySelectorAll('.view').forEach(viewElement => viewElement.classList.remove('active'));
     if (view === 'admin') {
         adminBtn.classList.add('active');
         adminView.classList.add('active');
-        adminView.style.display = 'block';
     } else if (view === 'timetable') {
         timetableBtn.classList.add('active');
         timetableView.classList.add('active');
-        timetableView.style.display = 'block';
-        showSectionSelectorForTimetable();
+        showSectionSelectorForTimetable(); // Ensure selector is always visible
     } else if (view === 'faculty') {
         document.getElementById('facultyBtn').classList.add('active');
         document.getElementById('facultyView').classList.add('active');
-        document.getElementById('facultyView').style.display = 'block';
-        // Always refresh faculty dropdown and reset view
-        updateAllFacultyDropdowns();
+        populateFacultyDropdown();
         showNoFacultySelected();
     }
 }
@@ -260,23 +240,15 @@ function populateFacultyDropdown() {
         option.textContent = faculty.name;
         facultySelect.appendChild(option);
     });
-    facultySelect.addEventListener('change', async function() {
-        const facultyId = facultySelect.value;
-        if (!facultyId) {
-            showNoFacultySelected();
-            return;
-        }
-        // Fetch schedule from backend
-        const res = await fetch(`/api/faculty/${facultyId}/schedule`);
-        const result = await res.json();
-        if (result.success) {
-            renderFacultyScheduleFromDB(result.schedule);
-            document.getElementById('facultyDetails').classList.remove('hidden');
-            document.getElementById('noFacultySelected').classList.add('hidden');
-        } else {
-            showNoFacultySelected();
-        }
-    });
+}
+
+function handleFacultySelect() {
+    const faculty = document.getElementById('facultySelect').value;
+    if (!faculty) {
+        showNoFacultySelected();
+        return;
+    }
+    showFacultyDetails(faculty);
 }
 
 function showNoFacultySelected() {
@@ -284,54 +256,56 @@ function showNoFacultySelected() {
     document.getElementById('noFacultySelected').classList.remove('hidden');
 }
 
-function renderFacultyScheduleFromDB(schedule) {
-    // Calculate stats
-    const totalPeriods = schedule.length;
-    let theoryCount = 0, labCount = 0;
-    const subjects = new Set();
-    schedule.forEach(slot => {
-        subjects.add(slot.subject);
-        if (slot.subject && slot.subject.toLowerCase().includes('lab')) labCount++;
-        else theoryCount++;
-    });
-    document.getElementById('facultyTotalPeriods').textContent = totalPeriods;
-    document.getElementById('facultyTheoryCount').textContent = theoryCount;
-    document.getElementById('facultyLabCount').textContent = labCount;
-    document.getElementById('facultySubjectCount').textContent = subjects.size;
-    // Render subjects taught
-    const subjectsList = document.getElementById('facultySubjectsList');
-    subjectsList.innerHTML = '';
-    subjects.forEach(subj => {
-        const div = document.createElement('div');
-        div.className = 'p-2 bg-primary-10 rounded mb-2';
-        div.textContent = subj;
-        subjectsList.appendChild(div);
-    });
-    // Render schedule grid for all sections
+function showFacultyDetails(faculty) {
+    const details = document.getElementById('facultyDetails');
+    const noSelected = document.getElementById('noFacultySelected');
+    details.classList.remove('hidden');
+    noSelected.classList.add('hidden');
+
+    // Gather all slots for this faculty
+    const slots = generatedTimetable.filter(slot => slot.faculty === faculty);
+    // Stats
+    document.getElementById('facultyTotalPeriods').textContent = slots.length;
+    document.getElementById('facultyTheoryCount').textContent = slots.filter(s => s.type === 'theory').length;
+    document.getElementById('facultyLabCount').textContent = slots.filter(s => s.type === 'lab').length;
+    // Subjects taught
+    const subjectsTaught = Array.from(new Set(slots.map(s => s.subject)));
+    document.getElementById('facultySubjectCount').textContent = subjectsTaught.length;
+    // Subjects list
+    document.getElementById('facultySubjectsList').innerHTML = subjectsTaught.map(sub => `<div class="p-2 bg-secondary rounded">${sub}</div>`).join('');
+
+    // Weekly schedule grid
+    renderFacultyScheduleGrid(faculty, slots);
+}
+
+function renderFacultyScheduleGrid(faculty, slots) {
     const grid = document.getElementById('facultyScheduleGrid');
-    grid.innerHTML = '';
+    if (!grid) return;
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
+    grid.innerHTML = '';
     grid.style.gridTemplateColumns = `minmax(120px, 1fr) repeat(${periods.length}, minmax(100px, 1fr))`;
+    // Header row
     let headerHtml = `<div class="timetable-header">Day / Time</div>`;
     periods.forEach(period => {
-        headerHtml += `<div class="timetable-header text-sm"><div class="font-semibold">${period}</div><div class="text-xs opacity-90">${timeSlots[period] || ''}</div></div>`;
+        headerHtml += `<div class="timetable-header text-sm">
+            <div class="font-semibold">${period}</div>
+            <div class="text-xs opacity-90">${timeSlots[period] || ''}</div>
+        </div>`;
     });
     grid.innerHTML += headerHtml;
+    // Rows for each day
     days.forEach(day => {
         let rowHtml = `<div class="timetable-header">${day}</div>`;
         periods.forEach(period => {
-            // Find all slots for this faculty on this day and period (across sections)
-            const slots = schedule.filter(s => s.day_of_week === day && s.time_slot === period);
+            const slot = slots.find(s => s.day === day && s.period === period);
             let cellClass = 'timetable-cell';
             let cellContent = '';
             if (period === 'Break') cellClass += ' period-break';
             if (period === 'Lunch') cellClass += ' period-lunch';
-            if (slots.length > 0) {
-                cellClass += slots[0].subject && slots[0].subject.toLowerCase().includes('lab') ? ' subject-lab' : ' subject-theory';
-                cellContent = slots.map(slot =>
-                    `<div class='font-medium text-sm'>${slot.subject}</div><div class='text-xs'>Section: ${slot.section || slot.class_name || ''} | ${slot.room || ''}</div>`
-                ).join('<hr>');
+            if (slot) {
+                cellClass += slot.type === 'lab' ? ' subject-lab' : (slot.type === 'theory' ? ' subject-theory' : '');
+                cellContent = `<div class="font-medium text-sm">${slot.subject}</div>`;
             }
             rowHtml += `<div class="${cellClass}">${cellContent}</div>`;
         });
@@ -339,6 +313,7 @@ function renderFacultyScheduleFromDB(schedule) {
     });
     setTimeout(() => lucide.createIcons(), 0);
 }
+
 // Branch and Section Handlers
 function handleBranchChange() {
     selectedBranch = branchSelect.value;
@@ -354,11 +329,9 @@ function handleSectionChange() {
 
 function updateSelectionDisplay() {
     const display = selectionDisplay;
-    if (!display) return;
     if (selectedBranch && selectedSections.length > 0) {
         display.classList.remove('hidden');
-        const p = display.querySelector('p');
-        if (p) p.textContent = `Selected: ${selectedBranch} - Section(s): ${selectedSections.join(', ')}`;
+        display.querySelector('p').textContent = `Selected: ${selectedBranch} - Section(s): ${selectedSections.join(', ')}`;
     } else {
         display.classList.add('hidden');
     }
@@ -400,36 +373,21 @@ async function loadDefaultSubjects() {
     }
 }
 
-async function addSubject() {
-    // Prompt for subject details (or use a modal in real UI)
-    const name = prompt('Enter subject name:', 'New Subject');
-    if (!name) return;
-    const type = prompt('Enter subject type (theory/lab):', 'theory');
-    if (!type || (type !== 'theory' && type !== 'lab')) return alert('Invalid type');
-    const hours = parseInt(prompt('Enter hours per week:', '3'), 10);
-    if (isNaN(hours) || hours < 1) return alert('Invalid hours');
-    // Fetch faculty list if not already loaded
-    if (!facultyList || facultyList.length === 0) await fetchFacultyList();
-    let facultyOptions = facultyList.map(f => `${f.id}: ${f.name}`).join('\n');
-    const faculty_id = prompt('Enter faculty ID for this subject:\n' + facultyOptions, facultyList[0]?.id || '');
-    if (!faculty_id || !facultyList.find(f => f.id == faculty_id)) return alert('Invalid faculty ID');
-    // Optionally, select program_id (here, use first program or prompt for it)
-    let program_id = 1;
-    if (window.programsArr && window.programsArr.length > 0) {
-        program_id = window.programsArr[0].id;
-    }
-    // Save to backend
-    const res = await fetch('/api/subjects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, type, hours, program_id, faculty_id })
-    });
-    const result = await res.json();
-    if (result.success) {
-        await loadDefaultSubjects(); // Refresh subjects from backend
-    } else {
-        alert('Error adding subject: ' + (result.message || 'Unknown error'));
-    }
+function addSubject() {
+    const newSubject = {
+        id: Date.now().toString(),
+        name: 'New Subject',
+        type: 'theory',
+        hours: 3,
+        faculty: ''
+    };
+    subjects.push(newSubject);
+    renderSubjects();
+    updateGenerateButton();
+}
+
+if (addSubjectBtn) {
+    addSubjectBtn.addEventListener('click', addSubject);
 }
 
 function updateSubject(id, updates) {
@@ -526,447 +484,128 @@ function updateGenerateButton() {
     console.log('missingName:', missingName);
     const canGenerate = selectedBranch && selectedSections.length > 0 && subjects.length > 0 && subjects.every(sub => sub.faculty && sub.name);
     console.log('canGenerate:', canGenerate);
-    if (generateBtn) generateBtn.disabled = !canGenerate;
-    if (timetableBtn) timetableBtn.disabled = generatedTimetable.length === 0;
+    generateBtn.disabled = !canGenerate;
+    timetableBtn.disabled = generatedTimetable.length === 0;
     const helpText = document.getElementById('generateHelp');
-    if (helpText) {
-        if (canGenerate) helpText.classList.add('hidden');
-        else helpText.classList.remove('hidden');
-    }
-}
-
-// Timetable Generation
-function generateTimetable() {
-    if (!selectedBranch || selectedSections.length === 0 || subjects.length === 0) {
-        return;
-    }
-    // Use the first selected section for single-section timetable
-    selectedSection = selectedSections[0];
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
-
-    const timetableMap = {};
-    days.forEach(day => {
-        timetableMap[day] = {};
-        periods.forEach(period => {
-            if (period === 'Break') {
-                timetableMap[day][period] = {
-                    day,
-                    period: 'Break',
-                    subject: 'Break',
-                    faculty: '',
-                    type: 'break'
-                };
-            } else if (period === 'Lunch') {
-                timetableMap[day][period] = {
-                    day,
-                    period: 'Lunch',
-                    subject: 'Lunch Break',
-                    faculty: '',
-                    type: 'lunch'
-                };
-            } else {
-                timetableMap[day][period] = null;
-            }
-        });
-    });
-
-
-    // 1. No randomness: Sort subjects by hours descending, then by name for determinism
-    const sortedSubjects = [...subjects].sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
-    const subjectHours = sortedSubjects.map(s => ({ ...s, hoursLeft: s.hours }));
-
-    // 2. Place labs first, one per day, balance across week
-    const labs = subjectHours.filter(s => s.type === 'lab');
-    let labDayIdx = 0;
-    labs.forEach(lab => {
-        let placed = false;
-        for (let attempt = 0; attempt < days.length; attempt++) {
-            const day = days[(labDayIdx + attempt) % days.length];
-            const slots = findContinuousSlots(timetableMap, day, periods, lab.hours);
-            if (slots) {
-                slots.forEach(period => {
-                    if (!facultyConflict(timetableMap, day, period, lab.faculty)) {
-                        timetableMap[day][period] = createSlot(day, period, lab, 'Lab-101'); // Use Lab-101 (matches DB)
-                    }
-                });
-                lab.hoursLeft = 0;
-                placed = true;
-                labDayIdx = (labDayIdx + 1) % days.length;
-                break;
-            }
-        }
-    });
-    // 3. Place theory subjects, round-robin, balance across days, prevent faculty overlap
-    const theories = subjectHours.filter(s => s.type !== 'lab');
-    let theoryDayIdx = 0;
-    while (theories.some(t => t.hoursLeft > 0)) {
-        for (let tIdx = 0; tIdx < theories.length; tIdx++) {
-            const subject = theories[tIdx];
-            if (subject.hoursLeft <= 0) continue;
-            let assigned = false;
-            for (let attempt = 0; attempt < days.length; attempt++) {
-                const day = days[(theoryDayIdx + attempt) % days.length];
-                const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
-                for (const period of validPeriods) {
-                    if (!timetableMap[day][period] && !facultyConflict(timetableMap, day, period, subject.faculty)) {
-                        timetableMap[day][period] = createSlot(day, period, subject, 'Room 205'); // Use Room 205 (matches DB)
-                        subject.hoursLeft--;
-                        assigned = true;
-                        break;
-                    }
-                }
-                if (assigned) break;
-            }
-            theoryDayIdx = (theoryDayIdx + 1) % days.length;
-        }
-        if (!theories.some(t => t.hoursLeft > 0 && canAssign(t, timetableMap, days, periods))) break;
-    }
-
-    // After scheduling all subjects, fill any remaining empty slots with 'LIB' (or any subject with available hours)
-    const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
-    days.forEach(day => {
-        validPeriods.forEach(period => {
-            if (!timetableMap[day][period]) {
-                // Find a subject with remaining hours
-                let filler = subjectHours.find(s => s.hoursLeft > 0);
-                if (!filler) filler = defaultSubjects.find(s => s.name === 'LIB');
-                timetableMap[day][period] = createSlot(day, period, filler, 'Room 205'); // Use Room 205 (matches DB)
-                if (filler.hoursLeft > 0) filler.hoursLeft--;
-            }
-        });
-    });
-
-    // Flatten timetableMap to generatedTimetable
-    generatedTimetable = Object.values(timetableMap).flatMap(day => Object.values(day).filter(slot => slot)).map(slot => ({ ...slot, section: selectedSection }));
-    
-    renderTimetable();
-    updateGenerateButton();
-    switchView('timetable');
-}
-
-// Robust fetchMappingData: cache classes, subjects, rooms
-async function fetchMappingData() {
-    try {
-        const [classesRes, subjectsRes, roomsRes, facultyRes] = await Promise.all([
-            fetch('/api/classes').then(r => r.json()),
-            fetch('/api/subjects').then(r => r.json()),
-            fetch('/api/rooms').then(r => r.json()),
-            fetch('/api/faculty').then(r => r.json())
-        ]);
-
-        window.classes = classesRes.success ? classesRes.classes : [];
-        window.subjectsArr = subjectsRes.success ? subjectsRes.subjects : [];
-        window.rooms = roomsRes.success ? roomsRes.rooms : [];
-        facultyList = (facultyRes.success && Array.isArray(facultyRes.faculty)) ? facultyRes.faculty.map(f => ({ id: f.id, name: f.name })) : (facultyList || []);
-    } catch (err) {
-        console.warn('fetchMappingData failed:', err);
-        window.classes = window.classes || [];
-        window.subjectsArr = window.subjectsArr || [];
-        window.rooms = window.rooms || [];
-    }
-}
-
-// Tolerant mapping from UI slots to DB ids
-function mapTimetableSlotsToDBIds(slots) {
-    const classes = window.classes || [];
-    const subjectsArr = window.subjectsArr || [];
-    const rooms = window.rooms || [];
-
-    return slots.map(slot => {
-        // class mapping: match by exact or beginsWith
-        const classObj = classes.find(c => c.name === slot.section || String(c.name).toLowerCase() === String(slot.section).toLowerCase())
-            || classes.find(c => String(slot.section).toLowerCase().indexOf(String(c.name).toLowerCase()) !== -1);
-
-        // subject mapping: case-insensitive exact, then contains
-        let subjectObj = subjectsArr.find(s => s.name && slot.subject && s.name.toLowerCase() === slot.subject.toLowerCase());
-        if (!subjectObj && slot.subject) {
-            subjectObj = subjectsArr.find(s => slot.subject.toLowerCase().includes(s.name.toLowerCase()));
-        }
-        // fallback to LIB if not found
-        if (!subjectObj) {
-            subjectObj = subjectsArr.find(s => s.name && s.name.toLowerCase() === 'lib');
-        }
-
-        // faculty mapping: try id then name
-        let facultyObj = null;
-        if (slot.faculty) {
-            facultyObj = facultyList.find(f => String(f.id) === String(slot.faculty)) || facultyList.find(f => f.name && slot.faculty && f.name.toLowerCase() === String(slot.faculty).toLowerCase());
-        }
-        if (!facultyObj && subjectObj && subjectObj.faculty_id) {
-            facultyObj = facultyList.find(f => f.id == subjectObj.faculty_id);
-        }
-        if (!facultyObj) facultyObj = facultyList[0] || null;
-
-        // room mapping: exact then contains then first room
-        let roomObj = rooms.find(r => r.name === slot.classroom || (slot.classroom && r.name.toLowerCase() === slot.classroom.toLowerCase()));
-        if (!roomObj && slot.classroom) {
-            roomObj = rooms.find(r => r.name.toLowerCase().includes(slot.classroom.toLowerCase()));
-        }
-        if (!roomObj) roomObj = rooms.find(r => /room/i.test(r.name)) || rooms[0] || null;
-
-        // time_slot: prefer same string used by UI (P1, P2, Break) - leave conversion to backend if needed
-        const time_slot = slot.period || slot.time_slot || slot.time;
-
-        // day_of_week: normalize to full day string if possible
-        const day_of_week = slot.day || slot.day_of_week || slot.weekday || '';
-
-        const mapped = {
-            class_id: classObj ? classObj.id : null,
-            subject_id: subjectObj ? subjectObj.id : null,
-            faculty_id: facultyObj ? facultyObj.id : null,
-            room_id: roomObj ? roomObj.id : null,
-            day_of_week: day_of_week,
-            time_slot: time_slot
-        };
-
-        // Helpful debug info
-        if (!mapped.class_id || !mapped.subject_id || !mapped.faculty_id || !mapped.room_id) {
-            console.warn('Mapping incomplete for slot:', slot, 'mapped:', mapped, 'classes:', classes, 'subjects:', subjectsArr, 'rooms:', rooms, 'facultyList:', facultyList);
-        }
-
-        return mapped;
-    });
-}
-
-// Improved save that fills sensible defaults and reports unmapped slots
-async function saveGeneratedTimetable(slots) {
-    await fetchMappingData(); // ensure mapping data available
-
-    const mappedSlots = mapTimetableSlotsToDBIds(slots);
-
-    // Fill defaults where possible
-    const rooms = window.rooms || [];
-    const subjectsArr = window.subjectsArr || [];
-    const defaultRoom = rooms.find(r => /room 101/i.test(r.name)) || rooms[0] || null;
-    const defaultSubject = subjectsArr.find(s => s.name && s.name.toLowerCase() === 'lib') || subjectsArr[0] || null;
-    const defaultFaculty = facultyList[0] || null;
-
-    const finalSlots = mappedSlots.map(s => {
-        const out = { ...s };
-        if (!out.subject_id && defaultSubject) out.subject_id = defaultSubject.id;
-        if (!out.room_id && defaultRoom) out.room_id = defaultRoom.id;
-        if (!out.faculty_id && defaultFaculty) out.faculty_id = defaultFaculty.id;
-        // ensure day/time present
-        if (!out.day_of_week) out.day_of_week = 'Monday';
-        if (!out.time_slot) out.time_slot = 'P1';
-        return out;
-    });
-
-    // Log any remaining missing
-    finalSlots.forEach(s => {
-        if (!s.class_id || !s.subject_id || !s.faculty_id || !s.room_id) {
-            console.error('Final slot still missing fields (will be skipped):', s);
-        }
-    });
-
-    const validSlots = finalSlots.filter(s => s.class_id && s.subject_id && s.faculty_id && s.room_id && s.day_of_week && s.time_slot);
-
-    // DEBUG: summary before sending
-    console.log('Timetable save summary:', {
-        totalSlots: finalSlots.length,
-        validSlots: validSlots.length,
-        invalidSlots: finalSlots.length - validSlots.length,
-        sampleInvalid: finalSlots.filter(s => !(s.class_id && s.subject_id && s.faculty_id && s.room_id)).slice(0,5)
-    });
-
-    if (validSlots.length === 0) {
-        alert('No valid timetable slots to save. Check console for mapping errors.');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/timetable/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slots: validSlots })
-        });
-        const result = await response.json();
-        if (result.success) {
-            alert('Timetable saved!');
-        } else {
-            alert('Error saving timetable: ' + (result.message || 'Unknown'));
-            console.error('Save result:', result);
-        }
-    } catch (err) {
-        console.error('Save request failed:', err);
-        alert('Failed to save timetable to server. See console for details.');
-    }
-}
-
-// Timetable Generation
-function generateTimetable() {
-    if (!selectedBranch || selectedSections.length === 0 || subjects.length === 0) {
-        return;
-    }
-    // Use the first selected section for single-section timetable
-    selectedSection = selectedSections[0];
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
-
-    const timetableMap = {};
-    days.forEach(day => {
-        timetableMap[day] = {};
-        periods.forEach(period => {
-            if (period === 'Break') {
-                timetableMap[day][period] = {
-                    day,
-                    period: 'Break',
-                    subject: 'Break',
-                    faculty: '',
-                    type: 'break'
-                };
-            } else if (period === 'Lunch') {
-                timetableMap[day][period] = {
-                    day,
-                    period: 'Lunch',
-                    subject: 'Lunch Break',
-                    faculty: '',
-                    type: 'lunch'
-                };
-            } else {
-                timetableMap[day][period] = null;
-            }
-        });
-    });
-
-
-    // 1. No randomness: Sort subjects by hours descending, then by name for determinism
-    const sortedSubjects = [...subjects].sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
-    const subjectHours = sortedSubjects.map(s => ({ ...s, hoursLeft: s.hours }));
-
-    // 2. Place labs first, one per day, balance across week
-    const labs = subjectHours.filter(s => s.type === 'lab');
-    let labDayIdx = 0;
-    labs.forEach(lab => {
-        let placed = false;
-        for (let attempt = 0; attempt < days.length; attempt++) {
-            const day = days[(labDayIdx + attempt) % days.length];
-            const slots = findContinuousSlots(timetableMap, day, periods, lab.hours);
-            if (slots) {
-                slots.forEach(period => {
-                    if (!facultyConflict(timetableMap, day, period, lab.faculty)) {
-                        timetableMap[day][period] = createSlot(day, period, lab, 'Lab-101'); // Use Lab-101 (matches DB)
-                    }
-                });
-                lab.hoursLeft = 0;
-                placed = true;
-                labDayIdx = (labDayIdx + 1) % days.length;
-                break;
-            }
-        }
-    });
-    // 3. Place theory subjects, round-robin, balance across days, prevent faculty overlap
-    const theories = subjectHours.filter(s => s.type !== 'lab');
-    let theoryDayIdx = 0;
-    while (theories.some(t => t.hoursLeft > 0)) {
-        for (let tIdx = 0; tIdx < theories.length; tIdx++) {
-            const subject = theories[tIdx];
-            if (subject.hoursLeft <= 0) continue;
-            let assigned = false;
-            for (let attempt = 0; attempt < days.length; attempt++) {
-                const day = days[(theoryDayIdx + attempt) % days.length];
-                const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
-                for (const period of validPeriods) {
-                    if (!timetableMap[day][period] && !facultyConflict(timetableMap, day, period, subject.faculty)) {
-                        timetableMap[day][period] = createSlot(day, period, subject, 'Room 205'); // Use Room 205 (matches DB)
-                        subject.hoursLeft--;
-                        assigned = true;
-                        break;
-                    }
-                }
-                if (assigned) break;
-            }
-            theoryDayIdx = (theoryDayIdx + 1) % days.length;
-        }
-        if (!theories.some(t => t.hoursLeft > 0 && canAssign(t, timetableMap, days, periods))) break;
-    }
-
-    // After scheduling all subjects, fill any remaining empty slots with 'LIB' (or any subject with available hours)
-    const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
-    days.forEach(day => {
-        validPeriods.forEach(period => {
-            if (!timetableMap[day][period]) {
-                // Find a subject with remaining hours
-                let filler = subjectHours.find(s => s.hoursLeft > 0);
-                if (!filler) filler = defaultSubjects.find(s => s.name === 'LIB');
-                timetableMap[day][period] = createSlot(day, period, filler, 'Room 205'); // Use Room 205 (matches DB)
-                if (filler.hoursLeft > 0) filler.hoursLeft--;
-            }
-        });
-    });
-
-    // Flatten timetableMap to generatedTimetable
-    generatedTimetable = Object.values(timetableMap).flatMap(day => Object.values(day).filter(slot => slot)).map(slot => ({ ...slot, section: selectedSection }));
-    
-    renderTimetable();
-    updateGenerateButton();
-    switchView('timetable');
-}
-
-// Robust fetchMappingData: cache classes, subjects, rooms
-async function fetchMappingData() {
-    try {
-        const [classesRes, subjectsRes, roomsRes, facultyRes] = await Promise.all([
-            fetch('/api/classes').then(r => r.json()),
-            fetch('/api/subjects').then(r => r.json()),
-            fetch('/api/rooms').then(r => r.json()),
-            fetch('/api/faculty').then(r => r.json())
-        ]);
-
-        window.classes = classesRes.success ? classesRes.classes : [];
-        window.subjectsArr = subjectsRes.success ? subjectsRes.subjects : [];
-        window.rooms = roomsRes.success ? roomsRes.rooms : [];
-        facultyList = (facultyRes.success && Array.isArray(facultyRes.faculty)) ? facultyRes.faculty.map(f => ({ id: f.id, name: f.name })) : (facultyList || []);
-    } catch (err) {
-        console.warn('fetchMappingData failed:', err);
-        window.classes = window.classes || [];
-        window.subjectsArr = window.subjectsArr || [];
-        window.rooms = window.rooms || [];
-    }
-}
-
-// Save generated timetable to backend with mapped IDs
-async function saveGeneratedTimetable(slots) {
-    await fetchMappingData(); // Ensure mapping data is loaded
-    const mappedSlots = mapTimetableSlotsToDBIds(slots);
-    // Debug: log all mapped slots and highlight those with missing fields
-    console.log('All mapped slots:', mappedSlots);
-    mappedSlots.forEach(slot => {
-        if (!slot.class_id || !slot.subject_id || !slot.faculty_id || !slot.room_id || !slot.day_of_week || !slot.time_slot) {
-            console.warn('Slot with missing fields:', slot);
-        }
-    });
-    const validSlots = mappedSlots.filter(slot => slot.class_id && slot.subject_id && slot.faculty_id && slot.room_id && slot.day_of_week && slot.time_slot);
-    if (validSlots.length === 0) {
-        alert('No valid timetable slots to save. Please check your data.');
-        return;
-    }
-    const response = await fetch('/api/timetable/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slots: validSlots })
-    });
-    const result = await response.json();
-    if (result.success) {
-        alert('Timetable saved!');
+    if (canGenerate) {
+        helpText.classList.add('hidden');
     } else {
-        alert('Error saving timetable: ' + result.message);
+        helpText.classList.remove('hidden');
     }
 }
 
-// Helper: choose a preferred room from loaded rooms based on type
-function getPreferredRoom(type) {
-    const rooms = window.rooms || [];
-    if (rooms.length === 0) return null;
-    // Prefer exact lab rooms when requesting a lab
-    if (type === 'lab') {
-        const labRoom = rooms.find(r => /lab/i.test(r.name) || /lab/i.test(r.features || ''));
-        if (labRoom) return labRoom.name;
+// Timetable Generation
+function generateTimetable() {
+    if (!selectedBranch || selectedSections.length === 0 || subjects.length === 0) {
+        return;
     }
-    // Prefer a room with number 205 if present (keeps previous behavior), otherwise first theory room
-    const prefer = rooms.find(r => /205/.test(r.name)) || rooms.find(r => /room/i.test(r.name)) || rooms[0];
-    return prefer ? prefer.name : null;
+    // Use the first selected section for single-section timetable
+    selectedSection = selectedSections[0];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
+
+    const timetableMap = {};
+    days.forEach(day => {
+        timetableMap[day] = {};
+        periods.forEach(period => {
+            if (period === 'Break') {
+                timetableMap[day][period] = {
+                    day,
+                    period: 'Break',
+                    subject: 'Break',
+                    faculty: '',
+                    type: 'break'
+                };
+            } else if (period === 'Lunch') {
+                timetableMap[day][period] = {
+                    day,
+                    period: 'Lunch',
+                    subject: 'Lunch Break',
+                    faculty: '',
+                    type: 'lunch'
+                };
+            } else {
+                timetableMap[day][period] = null;
+            }
+        });
+    });
+
+
+    // 1. No randomness: Sort subjects by hours descending, then by name for determinism
+    const sortedSubjects = [...subjects].sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
+    const subjectHours = sortedSubjects.map(s => ({ ...s, hoursLeft: s.hours }));
+
+    // 2. Place labs first, one per day, balance across week
+    const labs = subjectHours.filter(s => s.type === 'lab');
+    let labDayIdx = 0;
+    labs.forEach(lab => {
+        let placed = false;
+        for (let attempt = 0; attempt < days.length; attempt++) {
+            const day = days[(labDayIdx + attempt) % days.length];
+            const slots = findContinuousSlots(timetableMap, day, periods, lab.hours);
+            if (slots) {
+                slots.forEach(period => {
+                    // Prevent faculty overlap: check if faculty is already teaching this period in any section (simulate multi-section)
+                    if (!facultyConflict(timetableMap, day, period, lab.faculty)) {
+                        timetableMap[day][period] = createSlot(day, period, lab, 'Lab-101');
+                    }
+                });
+                lab.hoursLeft = 0;
+                placed = true;
+                labDayIdx = (labDayIdx + 1) % days.length;
+                break;
+            }
+        }
+        // fallback: if not placed, skip (should not happen with enough slots)
+    });
+
+    // 3. Place theory subjects, round-robin, balance across days, prevent faculty overlap
+    const theories = subjectHours.filter(s => s.type !== 'lab');
+    let theoryDayIdx = 0;
+    while (theories.some(t => t.hoursLeft > 0)) {
+        for (let tIdx = 0; tIdx < theories.length; tIdx++) {
+            const subject = theories[tIdx];
+            if (subject.hoursLeft <= 0) continue;
+            let assigned = false;
+            for (let attempt = 0; attempt < days.length; attempt++) {
+                const day = days[(theoryDayIdx + attempt) % days.length];
+                const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
+                for (const period of validPeriods) {
+                    if (!timetableMap[day][period] && !facultyConflict(timetableMap, day, period, subject.faculty)) {
+                        timetableMap[day][period] = createSlot(day, period, subject, 'Room-205');
+                        subject.hoursLeft--;
+                        assigned = true;
+                        break;
+                    }
+                }
+                if (assigned) break;
+            }
+            theoryDayIdx = (theoryDayIdx + 1) % days.length;
+        }
+        // If no assignment possible for any, break to avoid infinite loop
+        if (!theories.some(t => t.hoursLeft > 0 && canAssign(t, timetableMap, days, periods))) break;
+    }
+
+    // After scheduling all subjects, fill any remaining empty slots with 'LIB' (or any subject with available hours)
+    const validPeriods = periods.filter(p => p !== 'Break' && p !== 'Lunch');
+    days.forEach(day => {
+        validPeriods.forEach(period => {
+            if (!timetableMap[day][period]) {
+                // Find a subject with remaining hours
+                let filler = subjectHours.find(s => s.hoursLeft > 0);
+                if (!filler) filler = defaultSubjects.find(s => s.name === 'LIB');
+                timetableMap[day][period] = createSlot(day, period, filler, 'Room-205');
+                if (filler.hoursLeft > 0) filler.hoursLeft--;
+            }
+        });
+    });
+
+    // Flatten timetableMap to generatedTimetable
+    generatedTimetable = Object.values(timetableMap).flatMap(day => Object.values(day).filter(slot => slot));
+    
+    renderTimetable();
+    updateGenerateButton();
+    switchView('timetable');
 }
 
 // Helper functions for timetable generation
@@ -1011,7 +650,7 @@ function renderTimetable() {
 
     subtitle.textContent = `${selectedBranch} - Section ${selectedSection}`;
 
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday','Saturday'];
     const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
     
     // Clear grid and prepare for new structure
@@ -1064,29 +703,16 @@ function renderTimetable() {
     // New: Render Faculty List below the timetable
     // FIX: Count frequency of each subject in generatedTimetable, EXCLUDE breaks
     const subjectFrequency = {};
-    const subjectFacultyMap = {};
     generatedTimetable.forEach(slot => {
         if (slot.subject === 'Break' || slot.subject === 'Lunch Break') return;
         if (!subjectFrequency[slot.subject]) subjectFrequency[slot.subject] = 0;
         subjectFrequency[slot.subject]++;
-        // Map subject to faculty
-        if (!subjectFacultyMap[slot.subject]) {
-            // Find subject in subjects array
-            const subjObj = subjects.find(s => s.name === slot.subject);
-            if (subjObj) {
-                const facultyObj = facultyList.find(f => f.id == subjObj.faculty);
-                subjectFacultyMap[slot.subject] = facultyObj ? facultyObj.name : subjObj.faculty;
-            } else {
-                subjectFacultyMap[slot.subject] = '';
-            }
-        }
     });
     if (Object.keys(subjectFrequency).length > 0) {
         let facultyHtml = `<h4 class="text-lg font-semibold mb-3">Faculty Assignments</h4>`;
         facultyHtml += `<ul class="list-disc list-inside space-y-1 text-sm">`;
         Object.entries(subjectFrequency).forEach(([subject, freq]) => {
-            const facultyName = subjectFacultyMap[subject] ? ` (Faculty: ${subjectFacultyMap[subject]})` : '';
-            facultyHtml += `<li class="font-medium"><strong>${subject}</strong>: ${freq}${facultyName}</li>`;
+            facultyHtml += `<li class="font-medium"><strong>${subject}</strong>: ${freq}</li>`;
         });
         facultyHtml += `</ul>`;
         facultyListContainer.innerHTML = facultyHtml;
@@ -1171,7 +797,6 @@ function downloadFile(content, filename) {
 // New: Populate Branch and Section dropdowns from backend
 async function populateBranchDropdown() {
     const select = document.getElementById('branchSelect');
-    if (!select) return; // guard when branch dropdown is not on the current page
     select.innerHTML = '<option value="">Choose a branch</option>';
     try {
         const response = await fetch('/api/programs');
@@ -1228,26 +853,29 @@ async function generateTimetablesForAllSections() {
         alert('Please select branch and at least one section, and add subjects.');
         return;
     }
+    
     const generateAllSectionBtn = document.getElementById('generateAllSectionBtn');
     if (generateAllSectionBtn) {
         generateAllSectionBtn.disabled = true;
         generateAllSectionBtn.textContent = 'Generating...';
     }
+    
     try {
         allSectionTimetables = {};
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const periods = ['P1', 'P2', 'Break', 'P3', 'P4', 'Lunch', 'P5', 'P6', 'P7'];
+        
         // More classrooms to reduce conflicts
         const classrooms = [
-            { id: 'room1', name: 'Room 201', type: 'theory' },
-            { id: 'room2', name: 'Room 202', type: 'theory' },
-            { id: 'room3', name: 'Room 203', type: 'theory' },
-            { id: 'room4', name: 'Room 204', type: 'theory' },
-            { id: 'room5', name: 'Room 205', type: 'theory' },
-            { id: 'room6', name: 'Room 206', type: 'theory' },
-            { id: 'room7', name: 'Room 207', type: 'theory' }
+            { id: 'room1', name: 'Room-201', type: 'theory' },
+            { id: 'room2', name: 'Room-202', type: 'theory' },
+            { id: 'room3', name: 'Room-203', type: 'theory' },
+            { id: 'room4', name: 'Room-204', type: 'theory' },
+            { id: 'room5', name: 'Room-205', type: 'theory' },
+            { id: 'room6', name: 'Room-206', type: 'theory' },
+            { id: 'room7', name: 'Room-207', type: 'theory' }
         ];
-        // Define labs array here (fixes bug)
+        
         const labs = [
             { id: 'lab1', name: 'Lab-101', type: 'lab' },
             { id: 'lab2', name: 'Lab-102', type: 'lab' },
@@ -1255,6 +883,7 @@ async function generateTimetablesForAllSections() {
             { id: 'lab4', name: 'Lab-104', type: 'lab' },
             { id: 'lab5', name: 'Lab-105', type: 'lab' }
         ];
+
         // Track faculty and room availability
         const facultyAvailability = {};
         facultyList.forEach(faculty => {
@@ -1482,7 +1111,7 @@ async function generateTimetablesForAllSections() {
                         if (period !== 'Break' && period !== 'Lunch' && (!allSectionTimetables[section][day][period] || allSectionTimetables[section][day][period].subject === '')) {
                             allSectionTimetables[section][day][period] = {
                                 day, period,
-                                subject: 'LIB',
+                                subject: 'Unassigned',
                                 faculty: '',
                                 type: 'theory',
                                 classroom: '',
@@ -1559,8 +1188,6 @@ function initializeTimetable(days, periods, section) {
 function fillRemainingSlots(days, periods, allSectionTimetables, facultyAvailability, roomAvailability, classrooms, labs) {
     // Get all subjects that could potentially fill empty slots
     const allSubjects = subjects.filter(s => s.faculty && facultyAvailability[s.faculty]);
-    // Pick a default faculty for LIB fallback (first in facultyList)
-    const defaultFaculty = facultyList.length > 0 ? facultyList[0].id : '';
     for (const section in allSectionTimetables) {
         const timetable = allSectionTimetables[section];
         for (const day of days) {
@@ -1592,12 +1219,12 @@ function fillRemainingSlots(days, periods, allSectionTimetables, facultyAvailabi
                         }
                         if (filled) break;
                     }
-                    // If no subject could be assigned, fill with LIB and assign a default faculty
+                    // If no subject could be assigned, fill with placeholder
                     if (!filled) {
                         timetable[day][period] = {
                             day, period,
-                            subject: 'LIB',
-                            faculty: defaultFaculty,
+                            subject: 'Unassigned',
+                            faculty: '',
                             type: 'theory',
                             classroom: '',
                             section
@@ -1639,29 +1266,3 @@ function showSectionSelectorForTimetable() {
         container.appendChild(btn);
     });
 }
-
-// Helper: Call this after adding a new section to refresh the section checkboxes
-function refreshSectionsAfterAdd() {
-    populateSectionDropdown();
-}
-
-// Sample schedule loader for faculty view
-function loadSampleFacultySchedule() {
-    const sample = [
-        { day_of_week: 'Monday', time_slot: 'P1', subject: 'Data Structures', room: 'Room 201', section: 'CSE-A' },
-        { day_of_week: 'Monday', time_slot: 'P3', subject: 'DS Lab', room: 'Lab-101', section: 'CSE-A' },
-        { day_of_week: 'Tuesday', time_slot: 'P2', subject: 'Operating Systems', room: 'Room 202', section: 'CSE-A' },
-        { day_of_week: 'Wednesday', time_slot: 'P5', subject: 'Computer Networks', room: 'Room 203', section: 'CSE-A' },
-        { day_of_week: 'Thursday', time_slot: 'P4', subject: 'Software Engineering', room: 'Room 204', section: 'CSE-A' },
-        { day_of_week: 'Friday', time_slot: 'P2', subject: 'DBMS', room: 'Room 205', section: 'CSE-A' }
-    ];
-    try {
-        if (typeof renderFacultyScheduleGrid === 'function') renderFacultyScheduleGrid(sample);
-        const fd = document.getElementById('facultyDetails'); if (fd) fd.classList.remove('hidden');
-        const nf = document.getElementById('noFacultySelected'); if (nf) nf.classList.add('hidden');
-    } catch (err) {
-        console.error('Failed to load sample schedule:', err);
-    }
-}
-// expose for HTML onclick
-window.loadSampleFacultySchedule = loadSampleFacultySchedule;
