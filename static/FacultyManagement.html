@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Management</title>
+
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css">
+
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="university-header">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="graduation-cap" class="h-8 w-8"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">College Timetable Generator</h1>
+                        <p class="primary-foreground-80 text-sm">Automated Academic Scheduling System</p>
+                    </div>
+                </div>
+                <nav class="flex space-x-4">
+                    <button id="adminBtn" class="nav-btn active">
+                        <i data-lucide="settings" class="h-4 w-4 mr-2"></i>
+                        Admin Panel
+                    </button>
+                    <button id="timetableBtn" class="nav-btn" disabled>
+                        <i data-lucide="calendar" class="h-4 w-4 mr-2"></i>
+                        View Timetable
+                    </button>
+                    <button id="facultyBtn" class="nav-btn">
+                        <i data-lucide="users" class="h-4 w-4 mr-2"></i>
+                        Faculty View
+                    </button>
+                    <button id="logoutBtn" class="btn btn-outline btn-sm">
+                        <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
+                        Logout
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <main>
+        <!-- Add Faculty View -->
+        <div id="addFacultyView" class="view active space-y-6">
+            <h2 class="text-3xl font-bold text-foreground mb-2">Add/Delete Faculty</h2>
+            <div id="addFacultySection" class="admin-card" style="max-width: 500px; width: 100%; margin: 0 auto;">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="user-plus" class="h-5 w-5 mr-2 text-primary"></i>
+                    Add Faculty
+                </h3>
+                <form id="addFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                    <div class="flex-1">
+                        <label for="facultyNameInput" class="block text-sm font-medium mb-1">Faculty Name</label>
+                        <input id="facultyNameInput" type="text" class="custom-input w-full"
+                            placeholder="Enter faculty name" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="width:120px;min-width:unset;">Add
+                        Faculty</button>
+                </form>
+                <p id="addFacultyMsg" class="text-sm text-green-600 mt-2 hidden">Faculty added!</p>
+                <hr class="my-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="user-minus" class="h-5 w-5 mr-2 text-destructive"></i>
+                    Delete Faculty
+                </h3>
+                <form id="deleteFacultyForm" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                    <div class="flex-1">
+                        <label for="facultyDeleteSelect" class="block text-sm font-medium mb-1">Select Faculty</label>
+                        <select id="facultyDeleteSelect" class="custom-select w-full">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-destructive btn-sm"
+                        style="width:120px;min-width:unset;">Delete</button>
+                </form>
+                <p id="deleteFacultyMsg" class="text-sm text-green-600 mt-2 hidden">Faculty deleted!</p>
+            </div>
+        </div>
+    </main>
+<script>
+    // Add faculty form handler (backend integration)
+        document.getElementById('addFacultyForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const input = document.getElementById('facultyNameInput');
+            const msg = document.getElementById('addFacultyMsg');
+            const name = input.value.trim();
+            if (!name) return;
+            try {
+                const response = await fetch('/api/faculty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    input.value = '';
+                    msg.textContent = 'Faculty added!';
+                    msg.classList.remove('hidden');
+                    setTimeout(() => msg.classList.add('hidden'), 1500);
+                    updateFacultyDeleteDropdown();
+                } else {
+                    msg.textContent = 'Error: ' + (result.message || 'Could not add faculty');
+                    msg.classList.remove('hidden');
+                    setTimeout(() => msg.classList.add('hidden'), 2000);
+                }
+            } catch (err) {
+                msg.textContent = 'Server error';
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 2000);
+            }
+        });
+
+        // Delete faculty form handler (backend integration)
+        document.getElementById('deleteFacultyForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const select = document.getElementById('facultyDeleteSelect');
+            const msg = document.getElementById('deleteFacultyMsg');
+            const facultyId = select.value;
+            if (!facultyId) return;
+            try {
+                const response = await fetch(`/api/faculty/${facultyId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    msg.textContent = 'Faculty deleted!';
+                    msg.classList.remove('hidden');
+                    setTimeout(() => msg.classList.add('hidden'), 1500);
+                    updateFacultyDeleteDropdown();
+                    select.value = '';
+                } else {
+                    msg.textContent = 'Error: ' + (result.message || 'Could not delete faculty');
+                    msg.classList.remove('hidden');
+                    setTimeout(() => msg.classList.add('hidden'), 2000);
+                }
+            } catch (err) {
+                msg.textContent = 'Server error';
+                msg.classList.remove('hidden');
+                // Wire up Load Default Subjects button
+                const loadDefaultBtn = document.getElementById('loadDefaultBtn');
+                if (loadDefaultBtn) {
+                    loadDefaultBtn.addEventListener('click', loadDefaultSubjects);
+                }
+                setTimeout(() => msg.classList.add('hidden'), 2000);
+            }
+        });
+
+        // Helper to update Delete Faculty dropdown (fetch from backend)
+        async function updateFacultyDeleteDropdown() {
+            const select = document.getElementById('facultyDeleteSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">Select faculty to delete</option>';
+            try {
+                const response = await fetch('/api/faculty');
+                const result = await response.json();
+                if (result.success && Array.isArray(result.faculty)) {
+                    result.faculty.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f.id;
+                        option.textContent = f.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                // Optionally show error
+            }
+        }
+
+        // On view switch to Add Faculty, update dropdown
+        const addFacultyBtn2 = document.getElementById('addFacultyBtn');
+        if (addFacultyBtn2) {
+            addFacultyBtn2.addEventListener('click', () => {
+                updateFacultyDeleteDropdown();
+            });
+        }
+
+        
+</script>
+</body>
+
+</html>
