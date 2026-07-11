@@ -6,12 +6,13 @@ from dotenv import load_dotenv
 # Load credentials from .env
 load_dotenv()
 
-host = os.getenv('MYSQL_HOST', 'localhost')
-user = os.getenv('MYSQL_USER', 'root')
-password = os.getenv('MYSQL_PASSWORD', 'Kaladhar*011')
-database = 'time_table'
+host = os.getenv('MYSQL_ADDON_HOST', os.getenv('MYSQL_HOST', 'localhost'))
+user = os.getenv('MYSQL_ADDON_USER', os.getenv('MYSQL_USER', 'root'))
+password = os.getenv('MYSQL_ADDON_PASSWORD', os.getenv('MYSQL_PASSWORD', 'Kaladhar*011'))
+database = os.getenv('MYSQL_ADDON_DB', os.getenv('MYSQL_DB', 'time_table'))
+port = int(os.getenv('MYSQL_ADDON_PORT', 3306))
 
-print(f"Connecting to MySQL at {host} as {user}...")
+print(f"Connecting to MySQL at {host}:{port} as {user}...")
 
 try:
     # First, connect without a database to create it
@@ -19,6 +20,7 @@ try:
         host=host,
         user=user,
         password=password,
+        port=port,
         autocommit=True
     )
     

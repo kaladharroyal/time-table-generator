@@ -1,13 +1,18 @@
 from flask import Flask, send_from_directory, request, jsonify
 import os
 import pymysql
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = Flask(__name__, static_folder='static')
 # MySQL DB connection setup
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'Kaladhar*011',#your mysql password
-    'database': 'time_table'
+    'host': os.getenv('MYSQL_ADDON_HOST', os.getenv('MYSQL_HOST', 'localhost')),
+    'user': os.getenv('MYSQL_ADDON_USER', os.getenv('MYSQL_USER', 'root')),
+    'password': os.getenv('MYSQL_ADDON_PASSWORD', os.getenv('MYSQL_PASSWORD', 'Kaladhar*011')),
+    'database': os.getenv('MYSQL_ADDON_DB', os.getenv('MYSQL_DB', 'time_table')),
+    'port': int(os.getenv('MYSQL_ADDON_PORT', 3306))
 }
 # Get all departments for dropdown
 @app.route('/api/departments', methods=['GET'])
