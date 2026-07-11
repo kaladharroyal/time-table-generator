@@ -32,7 +32,7 @@ Before running the application, make sure you have the following installed on yo
 >   ```env
 >   MYSQL_HOST=localhost
 >   MYSQL_USER=root
->   MYSQL_PASSWORD=Kaladhar*011
+>   MYSQL_PASSWORD=**************
 >   MYSQL_DB=timetable_generator
 >   ```
 > 
