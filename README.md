@@ -24,7 +24,7 @@ Before running the application, make sure you have the following installed on yo
 >   DB_CONFIG = {
 >       'host': 'localhost',
 >       'user': 'root',
->       'password': 'Kaladhar*011', # Change this to your MySQL password
+>       'password': '*************', # Change this to your MySQL password
 >       'database': 'time_table'
 >   }
 >   ```
